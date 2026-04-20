@@ -1,4 +1,4 @@
-package com.ece420.lab6;
+package com.ece420.finalproject;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
@@ -10,10 +10,6 @@ import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Bundle;
-//import android.support.v7.app.AppCompatActivity;
-// import android.util.Log;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
@@ -21,7 +17,6 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.lang.Math;
-// import java.util.List;
 
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback{

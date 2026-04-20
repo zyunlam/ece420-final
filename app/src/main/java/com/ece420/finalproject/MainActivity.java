@@ -1,4 +1,4 @@
-package com.ece420.lab6;
+package com.ece420.finalproject;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -8,7 +8,6 @@ import android.Manifest;
 import android.os.Bundle;
 //import android.support.annotation.NonNull;
 //import android.support.v4.app.ActivityCompat;
-import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.view.View;

@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.ece420.lab6'
+    namespace 'com.ece420.finalproject'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.ece420.lab6"
+        applicationId "com.ece420.finalproject"
         minSdk 28
         targetSdk 29    // Android 10
 //        targetSdk 33    //Android 13
