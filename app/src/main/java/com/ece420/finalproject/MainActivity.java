@@ -20,9 +20,7 @@ public class MainActivity extends Activity{
     // Flag to control app behavior
     public static int appFlag = 0;
     // UI Variables
-    private Button histeqButton;
-    private Button sharpButton;
-    private Button edgeButton;
+    private Button captureButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,32 +35,12 @@ public class MainActivity extends Activity{
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_DENIED){
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, 1);}
 
-        // Setup Button for Histogram Equalization
-        histeqButton = (Button) findViewById(R.id.histeqButton);
-        histeqButton.setOnClickListener(new View.OnClickListener() {
+        // Setup Button for Capturing a Face
+        captureButton = (Button) findViewById(R.id.captureButton);
+        captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 appFlag = 1;
-                startActivity(new Intent(MainActivity.this, CameraActivity.class));
-            }
-        });
-
-        // Setup Button for Sharpening
-        sharpButton = (Button) findViewById(R.id.sharpeButton);
-        sharpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appFlag = 2;
-                startActivity(new Intent(MainActivity.this, CameraActivity.class));
-            }
-        });
-
-        // Setup Button for Edge Detection
-        edgeButton = (Button) findViewById(R.id.edgeButton);
-        edgeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appFlag = 3;
                 startActivity(new Intent(MainActivity.this, CameraActivity.class));
             }
         });
