@@ -4,46 +4,67 @@
     android:id="@+id/activity_camera"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.ece420.lab6.CameraActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:id="@+id/Helper"
-        android:text="HistEq Image"
-        android:layout_alignParentStart="true"/>
-<!--        android:textAppearance="@style/TextAppearance.AppCompat.Title" -->
-
     <SurfaceView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/Helper"
-        android:layout_alignParentStart="true"
         android:id="@+id/ViewOrigin"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@+id/HETitle" />
-
-    <SurfaceView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:id="@+id/ViewHisteq"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@+id/Helper"
-        android:layout_alignParentBottom="true" />
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_alignParentTop="true"
+        android:layout_above="@+id/Helper" />
 
     <TextView
         android:id="@+id/HETitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:text="Original Image"/>
-<!--        android:textAppearance="@style/TextAppearance.AppCompat.Title" />-->
+        android:layout_alignParentStart="true"
+        android:layout_margin="10dp"
+        android:padding="5dp"
+        android:background="#80000000"
+        android:textColor="#FFFFFF"
+        android:text="Original Preview" />
+
+    <TextView
+        android:id="@+id/Helper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#CC000000"
+        android:textColor="#FFFFFF"
+        android:text="Align face in center and press Capture" />
+
+    <SurfaceView
+        android:id="@+id/ViewHisteq"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_below="@+id/Helper"
+        android:layout_alignParentBottom="true" />
+
+    <TextView
+        android:id="@+id/HELabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/Helper"
+        android:layout_alignParentStart="true"
+        android:layout_margin="10dp"
+        android:padding="5dp"
+        android:background="#80000000"
+        android:textColor="#FFFFFF"
+        android:text="Normalized (HistEq) Output" />
+
+    <Button
+        android:id="@+id/captureButton"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="30dp"
+        android:text="RING"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FF0000"
+        android:elevation="8dp" />
 
 </RelativeLayout>

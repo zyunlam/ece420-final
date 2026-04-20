@@ -1,5 +1,7 @@
 package com.ece420.lab6;
 
+import static com.ece420.lab6.FacePreprocessor.histEq;
+
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
@@ -127,40 +129,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         Bitmap bmp = Bitmap.createBitmap(retData, width, height, Bitmap.Config.ARGB_8888);
         bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
         canvas.drawBitmap(bmp, new Rect(0, 0, height, width), new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
-    }
-
-    // Your Manual Histogram Equalization from Lab 6
-    public byte[] histEq(byte[] data, int width, int height) {
-        byte[] histeqData = new byte[data.length];
-        final int size = height * width;
-        int[] hist = new int[256];
-
-        for (int i = 0; i < size; i++) {
-            hist[data[i] & 0xFF]++;
-        }
-
-        int cum = 0;
-        int min_val = size + 1;
-        int max_val = 0;
-        for (int i = 0; i < 256; i++) {
-            cum += hist[i];
-            hist[i] = cum;
-            if (hist[i] > 0 && hist[i] < min_val) min_val = hist[i];
-            if (hist[i] > max_val) max_val = hist[i];
-        }
-
-        float L = 255.0f;
-        for (int i = 0; i < size; i++) {
-            int brightness = data[i] & 0xFF;
-            float val = (float) hist[brightness];
-            val = Math.round((val - min_val) / (max_val - min_val) * L);
-            histeqData[i] = (byte) val;
-        }
-
-        for (int i = size; i < data.length; i++) {
-            histeqData[i] = data[i];
-        }
-        return histeqData;
     }
 
     public int[] yuv2rgb(byte[] data) {

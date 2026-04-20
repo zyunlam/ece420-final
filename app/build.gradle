@@ -7,32 +7,28 @@ android {
     defaultConfig {
         applicationId "com.ece420.lab6"
         minSdk 28
-        targetSdk 29    // Android 10
-//        targetSdk 33    //Android 13
-//        targetSdk 34    //Android 14
+        targetSdk 34 // maybe keep at 29
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "android.test.runner.AndroidJUnitRunner"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-//    externalNativeBuild {
-//        cmake {
-//            path 'src/main/cpp/CMakeLists.txt'
-//        }
-//    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.6.1' // Added for modern UI support
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.vectordrawable:vectordrawable:1.0.1'
+    implementation 'androidx.core:core-ktx:1.1.0'
 
-    implementation 'androidx.core:core-ktx:1.1.0' // for Android 10
-//    implementation 'androidx.core:core-ktx:1.10.0-alpha01' // for Android 13
-//    implementation 'androidx.core:core-ktx:1.12.0-beta01' // for Android 14
+    // This requires the OpenCV module to be imported as a project
     implementation project(':opencv')
 }
