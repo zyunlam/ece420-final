@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "C:\\Users\\zyunl\\Downloads\\lab6\\lab6\\app\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\zyunl\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\zyunl\\Downloads\\lab6\\lab6\\app\\.cxx\\Debug\\62b2g1xa\\x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\zyunl\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\zyunl\\Downloads\\lab6\\lab6\\app\\.cxx\\Debug\\62b2g1xa\\x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "finalproject::@6890427a1f51a3e7e1df": {
+      "artifactName": "finalproject",
+      "abi": "x86",
+      "output": "C:\\Users\\zyunl\\Downloads\\lab6\\lab6\\app\\build\\intermediates\\cxx\\Debug\\62b2g1xa\\obj\\x86\\libfinalproject.so",
+      "runtimeFiles": []
+    }
+  }
+}
