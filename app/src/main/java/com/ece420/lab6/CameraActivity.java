@@ -57,6 +57,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         classifier = new FisherClassifier();
+        identification = new HashMap<>();
         startTraining();
         // Init classifier and stuff
         getWindow().setFormat(PixelFormat.UNKNOWN);
