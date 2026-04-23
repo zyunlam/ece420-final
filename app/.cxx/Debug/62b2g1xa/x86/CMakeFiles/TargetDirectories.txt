@@ -1,0 +1,3 @@
+C:/Users/zyunl/Downloads/lab6/lab6/app/.cxx/Debug/62b2g1xa/x86/CMakeFiles/finalproject.dir
+C:/Users/zyunl/Downloads/lab6/lab6/app/.cxx/Debug/62b2g1xa/x86/CMakeFiles/edit_cache.dir
+C:/Users/zyunl/Downloads/lab6/lab6/app/.cxx/Debug/62b2g1xa/x86/CMakeFiles/rebuild_cache.dir
