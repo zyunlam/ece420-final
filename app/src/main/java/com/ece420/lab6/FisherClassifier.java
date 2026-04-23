@@ -85,7 +85,7 @@ public class FisherClassifier {
 
     public Matrix GetFisherFaces(Matrix A, int[] labels, int num_components) {
         Matrix W_pca = GetEigenfaces(A, num_components);
-        Matrix X_pca = A.times(W_pca);
+        Matrix X_pca = A.transpose().times(W_pca);
 
         int N = X_pca.getRowDimension();
         int M = X_pca.getColumnDimension();
