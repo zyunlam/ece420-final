@@ -2,11 +2,18 @@ package com.ece420.lab6;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 public class FisherClassifier {
+    private Matrix fisherfaces;
+    private double[] meanFace;
+    Map<Integer, double[]> classWeights;
     public FisherClassifier() {}
+
+    // we should also have the option to load the fisher faces from the disk
 
     public static int[] argsort(final double[] a, final boolean ascending) {
         Integer[] indexes = new Integer[a.length];
@@ -39,6 +46,8 @@ public class FisherClassifier {
         int M = A.getRowDimension();
         int actualComponents = Math.min(num_components, N);
 
+        Matrix eigenfaces = new Matrix(M, actualComponents);
+
         for (int i = 0; i < actualComponents; i++) {
             int sortedIdx = indices[i];
 
@@ -67,6 +76,7 @@ public class FisherClassifier {
 
         int N = X_pca.getRowDimension();
         int M = X_pca.getColumnDimension();
+        int K = M;
 
         double[] mean = new double[M];
         for (int i = 0; i < M; i++) {
@@ -83,7 +93,7 @@ public class FisherClassifier {
 
         Matrix Sw = new Matrix(M, M);
         Matrix Sb = new Matrix(M, M);
-        for (int cls : classes) {
+        for (int c : classes) {
             // Filter rows belonging to class c
             ArrayList<Integer> classIndices = new ArrayList<>();
             for (int i = 0; i < labels.length; i++) {
@@ -134,6 +144,46 @@ public class FisherClassifier {
     }
 
     public void ComputeTrainingWeights() {
-        // We need to populate the face datas first
+        // We need to populate the face data first
     }
-}
+
+    public ClassifierResult ClassifyFace(double[] flatImage, double threshold) {
+        int numPixels = flatImage.length;
+
+        // Subtract the mean face: phi_new = gamma_new - mean_face
+        double[] phiNewArr = new double[numPixels];
+        for (int i = 0; i < numPixels; i++) {
+            phiNewArr[i] = flatImage[i] - meanFace[i];
+        }
+        // Create a 1 x Pixels matrix
+        Matrix phiNew = new Matrix(phiNewArr, 1);
+
+        // Project into Fisher space: omega_new = phi_new * fisherfaces
+        // Result is a 1 x num_components matrix
+        Matrix omegaNew = phiNew.times(fisherfaces);
+        double[] omegaNewArr = omegaNew.getRowPackedCopy();
+
+        int bestLabel = -1;
+        double minDistance = Double.MAX_VALUE;
+
+        // 3. Find the closest class weight (Nearest Neighbor)
+        for (Map.Entry<Integer, double[]> entry : classWeights.entrySet()) {
+            double[] avgWeight = entry.getValue();
+
+            // Calculate Euclidean Distance (L2 Norm)
+            double distance = 0;
+            for (int i = 0; i < omegaNewArr.length; i++) {
+                double diff = omegaNewArr[i] - avgWeight[i];
+                distance += diff * diff;
+            }
+            distance = Math.sqrt(distance);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestLabel = entry.getKey();
+            }
+        }
+
+        return new ClassifierResult(bestLabel, minDistance);
+    }
+ }
