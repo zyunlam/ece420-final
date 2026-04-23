@@ -200,7 +200,7 @@ public class FisherClassifier {
      *
      * @param imageList List of images in a vector
      * @param labels Labels of each image and stuff
-     * @param width int wedth, like 128
+     * @param width int width, like 128
      * @param height 128 as well. This should be the same as whatever the matrix is above and stuff
      */
     public void ComputeTrainingWeights(double[][] imageList, int[] labels, int width, int height) {
@@ -239,6 +239,11 @@ public class FisherClassifier {
     }
 
     public ClassifierResult ClassifyFace(double[] flatImage, double threshold) {
+        // in case training doesn't finish before classification
+        if (meanFace == null || fisherfaces == null) {
+            return new ClassifierResult(-1, Double.MAX_VALUE);
+        }
+
         int numPixels = flatImage.length;
 
         // Subtract the mean face: phi_new = gamma_new - mean_face

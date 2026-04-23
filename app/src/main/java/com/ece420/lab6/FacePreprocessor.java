@@ -1,5 +1,7 @@
 package com.ece420.lab6;
 
+import android.graphics.Bitmap;
+
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -10,6 +12,30 @@ import org.opencv.imgproc.Imgproc;
 public class FacePreprocessor {
     // Target size for Fisherface classification
     private static final int TARGET_SIZE = 128;
+
+    public byte[] processBitmapForTraining(Bitmap inputBmp) {
+        int w = inputBmp.getWidth();
+        int h = inputBmp.getHeight();
+        int[] pixels = new int[w * h];
+
+        // 1. Get all pixels from the Bitmap
+        inputBmp.getPixels(pixels, 0, w, 0, 0, w, h);
+
+        // 2. Manual conversion to Grayscale intensities
+        byte[] grayData = new byte[w * h];
+        for (int i = 0; i < pixels.length; i++) {
+            int r = (pixels[i] >> 16) & 0xff;
+            int g = (pixels[i] >> 8) & 0xff;
+            int b = pixels[i] & 0xff;
+            // Standard Luminance formula: 0.299R + 0.587G + 0.114B
+            grayData[i] = (byte) (0.299 * r + 0.587 * g + 0.114 * b);
+        }
+
+        // 3. Reuse your existing pipeline (Scale 3x -> Crop 128x128 -> HistEq)
+        // This ensures training data matches the live doorbell data exactly
+        return processCapturedFrame(grayData, w, h);
+    }
+
 
     public byte[] processCapturedFrame(byte[] yuvData, int width, int height) {
         // 1. Scale down and convert to Grayscale

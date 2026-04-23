@@ -4,6 +4,7 @@ import static com.ece420.lab6.FacePreprocessor.histEq;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.graphics.Bitmap;
@@ -19,8 +20,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.view.View;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private byte[] lastPreviewData; // Tracks the most recent frame without copying
@@ -145,7 +148,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
                     // Then we say something like
                     String id_result = identification.get(result.getIndex());
-                    if (result.getDistance() < 3000 && id_result != null) {
+                    if (id_result != null && result.getDistance() < 3000) {
                         // Okay!
                         textHelper.setText("Hello " + id_result);
                     } else {
@@ -315,6 +318,56 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             camera = null;
             previewing = false;
         }
+    }
+
+    public void startTraining() {
+        System.out.println("startTraining called\n");
+        // 1. Map names to Integer Labels for LDA
+        String[] memberNames = {"Zyun_Lam", "Tyler_Marrazzo", "Sushrut_Warekar"};
+        identification.clear();
+        for (int i = 0; i < memberNames.length; i++) {
+            identification.put(i, memberNames[i]);
+        }
+
+        int totalImages = 30; // 3 members * 10 images each
+        int pixelCount = 128 * 128;
+
+        double[][] imageList = new double[totalImages][pixelCount];
+        int[] labels = new int[totalImages];
+        int imageIndex = 0;
+
+        for (int label = 0; label < memberNames.length; label++) {
+            String currentMember = memberNames[label];
+
+            // Path: /data/user/0/com.ece420.lab6/files/faces/MemberName
+            File memberDir = new File(getFilesDir(), "faces/" + currentMember);
+            File[] imageFiles = memberDir.listFiles();
+
+            if (imageFiles != null) {
+                for (File imgFile : imageFiles) {
+                    if (imageIndex >= totalImages) break;
+
+                    // Load and Process
+                    Bitmap b = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                    byte[] processed = processor.processBitmapForTraining(b);
+
+                    // Convert processed byte[] to double[] for Jama Matrix math
+                    for (int p = 0; p < pixelCount; p++) {
+                        imageList[imageIndex][p] = (double) (processed[p] & 0xFF);
+                    }
+
+                    labels[imageIndex] = label; // Assign the integer label
+                    imageIndex++;
+                    b.recycle(); // Free memory immediately
+                }
+            }
+        }
+
+        // 2. Feed the 30 images into the Fisher Classifier
+        // This triggers PCA, then LDA, then computes Class Averages
+        classifier.ComputeTrainingWeights(imageList, labels, 128, 128);
+
+        textHelper.setText("Training complete for the 3 members");
     }
 }
 
