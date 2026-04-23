@@ -11,61 +11,29 @@
     tools:context="com.ece420.lab6.MainActivity">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Image Processing"
         android:id="@+id/MainTitle"
-        android:layout_marginStart="25dp"
-        android:layout_marginTop="33dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
-    <!--        android:textAppearance="@android:style/TextAppearance.Material.Title"-->
-
-    <TextView
-        android:text="Histogram Equalization"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="52dp"
-        android:id="@+id/SubTitle1"
-        android:layout_below="@+id/MainTitle"
-        android:layout_alignStart="@+id/MainTitle" />
-    <!--        android:textAppearance="@android:style/TextAppearance.Material.Subhead"-->
-
-    <Button
-        android:id="@+id/histeqButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/SubTitle1"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="74dp"
-        android:text="HistEq" />
-
-    <TextView
-        android:text="2D Convolution"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/SubTitle2"
-        android:layout_marginTop="66dp"
-        android:layout_below="@+id/histeqButton"
-        android:layout_alignStart="@+id/SubTitle1" />
-    <!--        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"-->
+        android:layout_marginTop="50dp"
+        android:text="F.A.C.E. Control Center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
 
     <Button
-        android:text="Sharpen Filter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="71dp"
-        android:id="@+id/sharpeButton"
-        android:layout_below="@+id/SubTitle2"
-        android:layout_centerHorizontal="true" />
+        android:id="@+id/button_enroll_mode"
+        android:layout_width="280dp"
+        android:layout_height="60dp"
+        android:layout_centerInParent="true"
+        android:text="Enroll New Member" />
 
     <Button
-        android:id="@+id/edgeButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/sharpeButton"
-        android:layout_below="@+id/sharpeButton"
-        android:layout_marginTop="56dp"
-        android:text="Edge Detection" />
+        android:id="@+id/button_recognition_mode"
+        android:layout_width="280dp"
+        android:layout_height="60dp"
+        android:layout_below="@+id/button_enroll_mode"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="Run Doorbell System" />
 
 </RelativeLayout>
