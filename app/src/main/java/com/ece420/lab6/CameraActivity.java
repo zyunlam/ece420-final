@@ -121,8 +121,22 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             @Override
             public void onClick(View v) {
                 if (frozenData != null) {
-                    textHelper.setText("Identifying... Please wait.");
-                    // The Fisherface classification logic will go here
+                    textHelper.setText("Processing Face for Identification...");
+
+                    // 1. Process the raw captured frame
+                    // This returns a 128x128 cropped, grayscale, equalized byte array
+                    byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
+
+                    // FOR DEBUGGING: Convert to Bitmap to see it (Optional)
+                    // Can use to verify the crop/histEq worked before classification
+                    // Bitmap finalFaceBmp = processor.getBitmapFromGrayscale(processedFace, 128, 128);
+
+                    // 2. TODO: Do PCA on it
+
+                    // 3. TODO: Do LDA (Fisherface algo) on it and classify
+                    // String identity = classifier.identify(processedFace);
+
+                    textHelper.setText("Processing Complete!");
                 }
             }
         });

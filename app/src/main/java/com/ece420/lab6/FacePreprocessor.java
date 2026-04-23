@@ -6,19 +6,70 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+
 public class FacePreprocessor {
+    // Target size for Fisherface classification
+    private static final int TARGET_SIZE = 128;
 
-    private static final int TARGET_WIDTH = 128;
-    private static final int TARGET_HEIGHT = 128;
+    public byte[] processCapturedFrame(byte[] yuvData, int width, int height) {
+        // 1. Scale down and convert to Grayscale
+        // We scale 640x480 -> 213x160 (3x downscale)
+        int scaledWidth = width / 3;
+        int scaledHeight = height / 3;
+        byte[] scaledGray = scaleAndGrayscale(yuvData, width, height, 3);
 
-    /**
-     * Prepares saved images for PCA using your custom Histogram Equalization.
-     */
-    public static byte[] histEq(byte[] data, int width, int height) {
-        byte[] histeqData = new byte[data.length];
-        final int size = height * width;
+        // 2. Crop the center 128x128 from the 213x160 intermediate image
+        byte[] finalFace = cropToTarget(scaledGray, scaledWidth, scaledHeight);
+
+        // 3. Equalize the 128x128 result
+        byte[] equalizedFace = new byte[TARGET_SIZE * TARGET_SIZE];
+        histEq(finalFace, equalizedFace, TARGET_SIZE, TARGET_SIZE);
+
+        return equalizedFace;
+    }
+
+    private byte[] scaleAndGrayscale(byte[] data, int w, int h, int factor) {
+        int newW = w / factor;
+        int newH = h / factor;
+        byte[] scaled = new byte[newW * newH];
+
+        for (int y = 0; y < newH; y++) {
+            for (int x = 0; x < newW; x++) {
+                // Mapping back to the Y-plane (Luminance)
+                int sourceIndex = (y * factor) * w + (x * factor);
+                scaled[y * newW + x] = data[sourceIndex];
+            }
+        }
+        return scaled;
+    }
+
+    private byte[] cropToTarget(byte[] scaledData, int scaledW, int scaledH) {
+        byte[] crop = new byte[TARGET_SIZE * TARGET_SIZE];
+
+        // Calculate start positions to center the 128x128 crop
+        // If scaledW < 128, startX will be negative (need to handle padding)
+        int startX = (scaledW - TARGET_SIZE) / 2;
+        int startY = (scaledH - TARGET_SIZE) / 2;
+
+        for (int y = 0; y < TARGET_SIZE; y++) {
+            for (int x = 0; x < TARGET_SIZE; x++) {
+                int currentX = startX + x;
+                int currentY = startY + y;
+
+                // Basic boundary check to prevent crashes
+                if (currentX >= 0 && currentX < scaledW && currentY >= 0 && currentY < scaledH) {
+                    crop[y * TARGET_SIZE + x] = scaledData[currentY * scaledW + currentX];
+                } else {
+                    crop[y * TARGET_SIZE + x] = 0; // Black padding if outside bounds
+                }
+            }
+        }
+        return crop;
+    }
+
+    public static void histEq(byte[] data, byte[] result, int w, int h) {
+        int size = w * h;
         int[] hist = new int[256];
-
         for (int i = 0; i < size; i++) {
             hist[data[i] & 0xFF]++;
         }
@@ -33,44 +84,23 @@ public class FacePreprocessor {
             if (hist[i] > max_val) max_val = hist[i];
         }
 
-        float L = 255.0f;
-        for (int i = 0; i < size; i++) {
-            int brightness = data[i] & 0xFF;
-            float val = (float) hist[brightness];
-            val = Math.round((val - min_val) / (max_val - min_val) * L);
-            histeqData[i] = (byte) val;
+        float range = (float) (max_val - min_val);
+        if (range > 0) {
+            for (int i = 0; i < size; i++) {
+                float val = ((float) (hist[data[i] & 0xFF] - min_val) / range) * 255.0f;
+                result[i] = (byte) Math.round(val);
+            }
         }
-
-        for (int i = size; i < data.length; i++) {
-            histeqData[i] = data[i];
-        }
-        return histeqData;
-    }
-
-    public Mat processImageForPCA(String filePath) {
-        // 1. Load as Grayscale
-        Mat img = Imgcodecs.imread(filePath, Imgcodecs.IMREAD_GRAYSCALE);
-        if (img.empty()) return null;
-
-        // 2. Resize to 128x128 per proposal [cite: 69, 70]
-        Mat resizedImg = new Mat();
-        Imgproc.resize(img, resizedImg, new Size(TARGET_WIDTH, TARGET_HEIGHT));
-
-        // 3. Convert Mat to byte array for your manual function
-        int size = (int) (resizedImg.total());
-        byte[] buffer = new byte[size];
-        resizedImg.get(0, 0, buffer);
-
-        // 4. Apply your manual Histogram Equalization
-        byte[] equalizedBuffer = histEq(buffer, TARGET_WIDTH, TARGET_HEIGHT);
-
-        // 5. Put data back into a Mat and convert to 64-bit float for PCA
-        Mat processedMat = new Mat(TARGET_HEIGHT, TARGET_WIDTH, CvType.CV_8UC1);
-        processedMat.put(0, 0, equalizedBuffer);
-
-        Mat finalMat = new Mat();
-        processedMat.convertTo(finalMat, CvType.CV_64F); // Required for Eigen math
-
-        return finalMat;
     }
 }
+
+    // For debugging -- not used
+//    public android.graphics.Bitmap getBitmapFromGrayscale(byte[] data, int width, int height) {
+//        int[] pixels = new int[width * height];
+//        for (int i = 0; i < width * height; i++) {
+//            int y = data[i] & 0xFF;
+//            // Pack into ARGB_8888
+//            pixels[i] = 0xFF000000 | (y << 16) | (y << 8) | y;
+//        }
+//        return android.graphics.Bitmap.createBitmap(pixels, width, height, android.graphics.Bitmap.Config.ARGB_8888);
+//    }
