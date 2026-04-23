@@ -3,14 +3,23 @@ package com.ece420.lab6;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 public class FisherClassifier {
     private Matrix fisherfaces;
+    private Matrix A;
+
+    private Matrix training_weights;
     private double[] meanFace;
     Map<Integer, double[]> classWeights;
+
+    private int[] targetSize;
+    private int[] validLabels;
+
     public FisherClassifier() {}
 
     // we should also have the option to load the fisher faces from the disk
@@ -26,7 +35,11 @@ public class FisherClassifier {
                 return (ascending ? 1 : -1) * Double.compare(a[i1], a[i2]);
             }
         });
-        return asArray(indexes);
+        int[] return_value = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            return_value[i] = indexes[i];
+        }
+        return return_value;
     }
 
 
@@ -143,8 +156,86 @@ public class FisherClassifier {
         return W_pca.times(W_lda);
     }
 
-    public void ComputeTrainingWeights() {
+    public Map<Integer, double[]> computeClassAverages(Matrix trainingWeights, int[] labels) {
+        // 1. Group weight vectors by label
+        Map<Integer, List<double[]>> groupedWeights = new HashMap<>();
+
+        int numImages = trainingWeights.getRowDimension();
+        int numFeatures = trainingWeights.getColumnDimension();
+
+        for (int i = 0; i < numImages; i++) {
+            int label = labels[i];
+            if (!groupedWeights.containsKey(label)) {
+                groupedWeights.put(label, new ArrayList<>());
+            }
+            // Extract the row as an array
+            groupedWeights.get(label).add(trainingWeights.getMatrix(i, i, 0, numFeatures - 1).getRowPackedCopy());
+        }
+
+        // 2. Compute the mean for each group
+        Map<Integer, double[]> classAverages = new HashMap<>();
+
+        for (Integer label : groupedWeights.keySet()) {
+            List<double[]> weights = groupedWeights.get(label);
+            double[] meanVector = new double[numFeatures];
+
+            for (double[] w : weights) {
+                for (int f = 0; f < numFeatures; f++) {
+                    meanVector[f] += w[f];
+                }
+            }
+
+            // Divide by number of samples in this class
+            for (int f = 0; f < numFeatures; f++) {
+                meanVector[f] /= weights.size();
+            }
+
+            classAverages.put(label, meanVector);
+        }
+
+        return classAverages;
+    }
+
+    /**
+     *
+     * @param imageList List of images in a vector
+     * @param labels Labels of each image and stuff
+     * @param width int wedth, like 128
+     * @param height 128 as well. This should be the same as whatever the matrix is above and stuff
+     */
+    public void ComputeTrainingWeights(double[][] imageList, int[] labels, int width, int height) {
         // We need to populate the face data first
+        int numImages = imageList.length;
+        int numPixels = imageList[0].length;
+
+        this.targetSize = new int[]{width, height};
+        this.validLabels = labels;
+        this.meanFace = new double[numPixels];
+
+        // 1. Calculate the mean face (Average of all images)
+        for (int p = 0; p < numPixels; p++) {
+            double sum = 0;
+            for (int i = 0; i < numImages; i++) {
+                sum += imageList[i][p];
+            }
+            this.meanFace[p] = sum / numImages;
+        }
+
+        // 2. Create the centered data matrix A
+        // We initialize A as (Pixels x Images) -> Column-major
+        this.A = new Matrix(numPixels, numImages);
+
+        for (int i = 0; i < numImages; i++) {
+            for (int p = 0; p < numPixels; p++) {
+                // Subtract the mean: Phi = Image - Mean
+                double centeredValue = imageList[i][p] - this.meanFace[p];
+                this.A.set(p, i, centeredValue);
+            }
+        }
+        this.fisherfaces = GetFisherFaces(A, labels, 150);
+        this.training_weights = A.times(fisherfaces);
+        this.classWeights = computeClassAverages(this.training_weights, labels);
+
     }
 
     public ClassifierResult ClassifyFace(double[] flatImage, double threshold) {

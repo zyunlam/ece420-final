@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.view.View;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private byte[] lastPreviewData; // Tracks the most recent frame without copying
@@ -46,9 +47,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private byte[] frozenData;
     private FacePreprocessor processor = new FacePreprocessor();
 
+    private FisherClassifier classifier;
+    private HashMap<Integer, String> identification;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        classifier = new FisherClassifier();
+        // Init classifier and stuff
         getWindow().setFormat(PixelFormat.UNKNOWN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_camera);
@@ -127,16 +133,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     // This returns a 128x128 cropped, grayscale, equalized byte array
                     byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
 
+                    double[] doubleFace = new double[processedFace.length];
+                    for (int i = 0; i < doubleFace.length; i++) {
+                        doubleFace[i] = (double) processedFace[i];
+                    }
                     // FOR DEBUGGING: Convert to Bitmap to see it (Optional)
                     // Can use to verify the crop/histEq worked before classification
                     // Bitmap finalFaceBmp = processor.getBitmapFromGrayscale(processedFace, 128, 128);
 
-                    // 2. TODO: Do PCA on it
-
-                    // 3. TODO: Do LDA (Fisherface algo) on it and classify
-                    // String identity = classifier.identify(processedFace);
-
-                    textHelper.setText("Processing Complete!");
+                    // Let's process the face and stuff
+                    ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
+                    // Then we say something like
+                    String id_result = identification.get(result.getIndex());
+                    if (result.getDistance() < 3000 && id_result != null) {
+                        // Okay!
+                        textHelper.setText("Hello " + id_result);
+                    } else {
+                        // Not okay
+                        textHelper.setText("Did not identify person");
+                    }
                 }
             }
         });
