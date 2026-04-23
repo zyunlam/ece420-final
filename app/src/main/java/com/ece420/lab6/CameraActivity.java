@@ -22,6 +22,8 @@ import android.view.View;
 import java.io.IOException;
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
+    private byte[] lastPreviewData; // Tracks the most recent frame without copying
+
 
     // UI Variables - Only one SurfaceView now
     private SurfaceView surfaceView;
@@ -65,12 +67,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         btnRetake = (Button) findViewById(R.id.button_retake);
         btnClassify = (Button) findViewById(R.id.button_classify);
 
+
         btnTakeImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (camera != null) {
+                if (camera != null && lastPreviewData != null) {
                     isFrozen = true;
-                    // This stops the hardware from pushing new frames to the SurfaceView
+                    // Capture the specific frame for your Fisherface classification
+                    frozenData = lastPreviewData.clone();
+
+                    // This halts the hardware stream, freezing the last frame on screen
                     camera.stopPreview();
                     camera.setPreviewCallback(null);
                 }
@@ -81,55 +87,35 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
         });
 
-//        btnTakeImage.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                isFrozen = true;
-//                btnTakeImage.setVisibility(View.GONE);
-//                btnRetake.setVisibility(View.VISIBLE);
-//                btnClassify.setVisibility(View.VISIBLE);
-//                textHelper.setText("Image Locked for Classification");
-//            }
-//        });
 
         btnRetake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (camera != null) {
                     isFrozen = false;
-                    // Restart the hardware stream
+
+                    // 1. RESTART THE HARDWARE PREVIEW
+                    // This tells the camera sensor to start pushing frames to the SurfaceView again
                     camera.startPreview();
-                    // Re-attach your callback to resume the Histogram Equalized display
+
+                    // 2. RE-ATTACH THE CALLBACK
+                    // This ensures lastPreviewData starts updating 30 times a second again
                     camera.setPreviewCallback(new PreviewCallback() {
                         public void onPreviewFrame(byte[] data, Camera camera) {
-                            frozenData = data.clone();
-                            Canvas canvas = surfaceHolder.lockCanvas(null);
-                            if (canvas != null) {
-                                onCameraFrame(canvas, data);
-                                surfaceHolder.unlockCanvasAndPost(canvas);
+                            if (!isFrozen) {
+                                lastPreviewData = data;
                             }
                         }
                     });
                 }
+
+                // Update UI visibility
                 btnTakeImage.setVisibility(View.VISIBLE);
                 btnRetake.setVisibility(View.GONE);
                 btnClassify.setVisibility(View.GONE);
                 textHelper.setText("Align face and press Take Image");
             }
         });
-
-
-
-//        btnRetake.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                isFrozen = false;
-//                btnTakeImage.setVisibility(View.VISIBLE);
-//                btnRetake.setVisibility(View.GONE);
-//                btnClassify.setVisibility(View.GONE);
-//                textHelper.setText("Align face and press Take Image");
-//            }
-//        });
 
         btnClassify.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -148,7 +134,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             int frontCameraId = -1;
             int numberOfCameras = Camera.getNumberOfCameras();
 
-            // Loop through available cameras to find the front-facing one
+            // 1. Loop through available cameras to find the front-facing sensor
             for (int i = 0; i < numberOfCameras; i++) {
                 Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.getCameraInfo(i, info);
@@ -158,18 +144,18 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 }
             }
 
-            // Open the front camera if found, otherwise default to back
+            // 2. Open the front camera if found
             if (frontCameraId != -1) {
                 camera = Camera.open(frontCameraId);
             } else {
-                camera = Camera.open();
+                camera = Camera.open(); // Fallback to back camera
             }
 
             if (camera != null) {
                 try {
-                    // IMPORTANT: We do NOT setPreviewDisplay to the actual surfaceHolder.
-                    // We use a dummy SurfaceTexture so the hardware doesn't draw the color feed.
-                    camera.setPreviewTexture(new android.graphics.SurfaceTexture(10));
+                    // 3. Connect the camera directly to the surface holder
+                    // This lets the hardware draw the color feed efficiently
+                    camera.setPreviewDisplay(surfaceHolder);
 
                     Camera.Parameters parameters = camera.getParameters();
                     parameters.setPreviewSize(width, height);
@@ -179,13 +165,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     camera.setPreviewCallback(new Camera.PreviewCallback() {
                         public void onPreviewFrame(byte[] data, Camera camera) {
                             if (!isFrozen) {
-                                frozenData = data.clone();
-                                // We manually lock and draw to the visible surfaceHolder
-                                Canvas canvas = surfaceHolder.lockCanvas(null);
-                                if (canvas != null) {
-                                    onCameraFrame(canvas, data);
-                                    surfaceHolder.unlockCanvasAndPost(canvas);
-                                }
+                                // Update our reference but DO NOT lock canvas here
+                                // Use 'lastPreviewData' to avoid constant cloning
+                                lastPreviewData = data;
                             }
                         }
                     });
@@ -197,7 +179,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
         }
     }
-
 //    public void surfaceCreated(SurfaceHolder holder) {
 //        if (!previewing) {
 //            camera = Camera.open();
@@ -230,8 +211,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 //        }
 //    }
 
-
-    // FOR GRAYSCALE AND HISTEQ'D CAMERA PREVIEW
     protected void onCameraFrame(Canvas canvas, byte[] data) {
         Matrix matrix = new Matrix();
 
