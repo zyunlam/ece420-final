@@ -1,5 +1,7 @@
 package com.ece420.lab6;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -104,6 +106,7 @@ public class FisherClassifier {
 
         int[] classes = Arrays.stream(labels).distinct().toArray();
 
+        Log.d("FisherClassifier", "Classes: " + classes.length);
         Matrix Sw = new Matrix(M, M);
         Matrix Sb = new Matrix(M, M);
         for (int c : classes) {
@@ -205,6 +208,7 @@ public class FisherClassifier {
      */
     public void ComputeTrainingWeights(double[][] imageList, int[] labels, int width, int height) {
         // We need to populate the face data first
+        Log.d("FisherClassifier", "Images: " + imageList.length);
         int numImages = imageList.length;
         int numPixels = imageList[0].length;
 

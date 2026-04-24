@@ -13,6 +13,7 @@ import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
@@ -58,7 +59,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         super.onCreate(savedInstanceState);
         classifier = new FisherClassifier();
         identification = new HashMap<>();
-        startTraining();
+        try {
+            startTraining();
+        } catch (IOException ioe) {
+            Log.e("CameraActivity", "IOException when training! " + ioe.getMessage());
+        }
         // Init classifier and stuff
         getWindow().setFormat(PixelFormat.UNKNOWN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -322,14 +327,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
-    public void startTraining() {
+    public void startTraining() throws IOException {
         System.out.println("startTraining called\n");
         // 1. Map names to Integer Labels for LDA
-        String[] memberNames = {"Zyun_Lam", "Tyler_Marrazzo", "Sushrut_Warekar"};
-        identification.clear();
-        for (int i = 0; i < memberNames.length; i++) {
-            identification.put(i, memberNames[i]);
-        }
 
         int totalImages = 30; // 3 members * 10 images each
         int pixelCount = 128 * 128;
@@ -338,30 +338,35 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         int[] labels = new int[totalImages];
         int imageIndex = 0;
 
-        for (int label = 0; label < memberNames.length; label++) {
-            String currentMember = memberNames[label];
-
-            // Path: /data/user/0/com.ece420.lab6/files/faces/MemberName
+        int label_idx = 0;
+        for (String currentMember : getAssets().list("faces")) {
+            identification.put(label_idx, currentMember);
             File memberDir = new File(getFilesDir(), "faces/" + currentMember);
-            File[] imageFiles = memberDir.listFiles();
-
+            //new InputStreamReader(getAssets().open("filename.txt")
+            String[] imageFiles = getAssets().list("faces/" + currentMember);
             if (imageFiles != null) {
-                for (File imgFile : imageFiles) {
+                for (String imgFile : imageFiles) {
                     if (imageIndex >= totalImages) break;
 
                     // Load and Process
-                    Bitmap b = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                    Bitmap b = BitmapFactory.decodeStream(getAssets().open("faces/" + currentMember + "/" + imgFile));
                     byte[] processed = processor.processBitmapForTraining(b);
 
                     // Convert processed byte[] to double[] for Jama Matrix math
+                    double sum = 0;
                     for (int p = 0; p < pixelCount; p++) {
                         imageList[imageIndex][p] = (double) (processed[p] & 0xFF);
+                        sum += imageList[imageIndex][p];
                     }
+                    Log.d("CameraActivity", "Sum of image: " + sum);
 
-                    labels[imageIndex] = label; // Assign the integer label
+                    labels[imageIndex] = label_idx; // Assign the integer label
                     imageIndex++;
                     b.recycle(); // Free memory immediately
                 }
+                label_idx++;
+            } else {
+                Log.d("CameraActivity", "can't load image!!!");
             }
         }
 
