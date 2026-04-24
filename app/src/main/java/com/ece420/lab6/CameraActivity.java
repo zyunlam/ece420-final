@@ -23,6 +23,7 @@ import android.view.View;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,7 +116,31 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 btnTakeImage.setVisibility(View.GONE);
                 btnRetake.setVisibility(View.VISIBLE);
                 btnClassify.setVisibility(View.VISIBLE);
-                textHelper.setText("Image Locked. Ready to Classify?");
+                textHelper.setText("Processing Face for Identification...");
+
+                // 1. Process the raw captured frame
+                // This returns a 128x128 cropped, grayscale, equalized byte array
+                byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
+
+                double[] doubleFace = new double[processedFace.length];
+                for (int i = 0; i < doubleFace.length; i++) {
+                    doubleFace[i] = (double) processedFace[i];
+                }
+                // FOR DEBUGGING: Convert to Bitmap to see it (Optional)
+                // Can use to verify the crop/histEq worked before classification
+                // Bitmap finalFaceBmp = processor.getBitmapFromGrayscale(processedFace, 128, 128);
+
+                // Let's process the face and stuff
+                ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
+                // Then we say something like
+                String id_result = identification.get(result.getIndex());
+                if (id_result != null && result.getDistance() < 1500) {
+                    // Okay!
+                    textHelper.setText("Hello " + id_result + "(Distance: " + result.getDistance() + ")");
+                } else {
+                    // Not okay
+                    textHelper.setText("Did not identify person (We think it's " + id_result  + ")(Distance: " + result.getDistance() + ")");
+                }
             }
         });
 
@@ -350,8 +375,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         int totalImages = 30; // 3 members * 10 images each
         int pixelCount = 128 * 128;
 
-        double[][] imageList = new double[totalImages][pixelCount];
-        int[] labels = new int[totalImages];
+        ArrayList<double[]> imageList = new ArrayList<>();
+        ArrayList<Integer> labels = new ArrayList<Integer>();
         int imageIndex = 0;
 
         int label_idx = 0;
@@ -362,7 +387,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             String[] imageFiles = getAssets().list("faces/" + currentMember);
             if (imageFiles != null) {
                 for (String imgFile : imageFiles) {
-                    if (imageIndex >= totalImages) break;
 
                     // Load and Process
                     Bitmap b = BitmapFactory.decodeStream(getAssets().open("faces/" + currentMember + "/" + imgFile));
@@ -370,13 +394,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
                     // Convert processed byte[] to double[] for Jama Matrix math
                     double sum = 0;
+                    double[] image_array = new double[pixelCount];
                     for (int p = 0; p < pixelCount; p++) {
-                        imageList[imageIndex][p] = (double) (processed[p] & 0xFF);
-                        sum += imageList[imageIndex][p];
+                        image_array[p] = (double) (processed[p] & 0xFF);
+                        sum += image_array[p];
                     }
+                    imageList.add(image_array);
                     Log.d("CameraActivity", "Sum of image: " + sum);
 
-                    labels[imageIndex] = label_idx; // Assign the integer label
+                    labels.add(label_idx); // Assign the integer label
                     imageIndex++;
                     b.recycle(); // Free memory immediately
                 }
@@ -385,10 +411,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 Log.d("CameraActivity", "can't load image!!!");
             }
         }
+        double[][] imageArray = new double[imageList.size()][pixelCount];
+        for (int i = 0; i < imageList.size(); i++) {
+            imageArray[i] = imageList.get(i);
+        }
+
+        int[] label_list = new int[labels.size()];
+        for (int i = 0; i < labels.size(); i++) {
+            label_list[i] = labels.get(i);
+        }
 
         // 2. Feed the 30 images into the Fisher Classifier
         // This triggers PCA, then LDA, then computes Class Averages
-        classifier.ComputeTrainingWeights(imageList, labels, 128, 128);
+        classifier.ComputeTrainingWeights(imageArray, label_list, 128, 128);
 
         // textHelper.setText("Training complete for the 3 members");
     }
