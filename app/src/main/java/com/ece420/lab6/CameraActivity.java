@@ -171,12 +171,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
                     // Then we say something like
                     String id_result = identification.get(result.getIndex());
-                    if (id_result != null && result.getDistance() < 3000) {
+                    if (id_result != null && result.getDistance() < 1500) {
                         // Okay!
-                        textHelper.setText("Hello " + id_result);
+                        textHelper.setText("Hello " + id_result + "(Distance: " + result.getDistance() + ")");
                     } else {
                         // Not okay
-                        textHelper.setText("Did not identify person");
+                        textHelper.setText("Did not identify person (We think it's " + id_result  + ")(Distance: " + result.getDistance() + ")");
                     }
                 }
             }

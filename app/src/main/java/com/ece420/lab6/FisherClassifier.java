@@ -238,7 +238,7 @@ public class FisherClassifier {
         }
 
         // FIX ME - Changing num components to 20 for now to test if it works
-        this.fisherfaces = GetFisherFaces(A, labels, 150);
+        this.fisherfaces = GetFisherFaces(A, labels, 20);
         this.training_weights = A.transpose().times(fisherfaces);
         this.classWeights = computeClassAverages(this.training_weights, labels);
 
@@ -264,7 +264,9 @@ public class FisherClassifier {
         // Result is a 1 x num_components matrix
         Matrix omegaNew = phiNew.times(fisherfaces);
         double[] omegaNewArr = omegaNew.getRowPackedCopy();
-
+        for (double d : omegaNewArr) {
+            Log.d("FisherClassifier", "ad" + d);
+        }
         int bestLabel = -1;
         double minDistance = Double.MAX_VALUE;
 
