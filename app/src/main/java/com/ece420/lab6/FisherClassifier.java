@@ -236,8 +236,10 @@ public class FisherClassifier {
                 this.A.set(p, i, centeredValue);
             }
         }
+
+        // FIX ME - Changing num components to 20 for now to test if it works
         this.fisherfaces = GetFisherFaces(A, labels, 150);
-        this.training_weights = A.times(fisherfaces);
+        this.training_weights = A.transpose().times(fisherfaces);
         this.classWeights = computeClassAverages(this.training_weights, labels);
 
     }

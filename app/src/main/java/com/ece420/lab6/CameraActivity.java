@@ -59,11 +59,27 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         super.onCreate(savedInstanceState);
         classifier = new FisherClassifier();
         identification = new HashMap<>();
-        try {
-            startTraining();
-        } catch (IOException ioe) {
-            Log.e("CameraActivity", "IOException when training! " + ioe.getMessage());
-        }
+        // put training in a background thread
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    startTraining();
+                    // Update UI on the main thread when done
+                    runOnUiThread(() -> textHelper.setText("Training complete!"));
+                } catch (IOException e) {
+                    Log.e("CameraActivity", "Training failed", e);
+                }
+            }
+        }).start();
+
+
+
+        // try {
+        //     startTraining();
+        // } catch (IOException ioe) {
+        //     Log.e("CameraActivity", "IOException when training! " + ioe.getMessage());
+        // }
         // Init classifier and stuff
         getWindow().setFormat(PixelFormat.UNKNOWN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -374,7 +390,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         // This triggers PCA, then LDA, then computes Class Averages
         classifier.ComputeTrainingWeights(imageList, labels, 128, 128);
 
-        textHelper.setText("Training complete for the 3 members");
+        // textHelper.setText("Training complete for the 3 members");
     }
 }
 
