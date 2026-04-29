@@ -4,58 +4,80 @@
     android:id="@+id/activity_camera"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#000000"
     tools:context="com.ece420.lab6.CameraActivity">
 
+    <!-- Camera preview fills the whole screen -->
     <SurfaceView
         android:id="@+id/ViewOrigin"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- ── HUD corner brackets ───────────────────────────────────────── -->
+
+    <!-- Top-left horizontal bar -->
+    <View
+        android:layout_width="48dp"
+        android:layout_height="3dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="88dp"
+        android:layout_marginLeft="32dp"
+        android:background="#00E5FF" />
+
+    <!-- Top-left vertical bar -->
+    <View
+        android:layout_width="3dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="88dp"
+        android:layout_marginLeft="32dp"
+        android:background="#00E5FF" />
+
+    <!-- Top-right horizontal bar -->
+    <View
+        android:layout_width="48dp"
+        android:layout_height="3dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="88dp"
+        android:layout_marginRight="32dp"
+        android:background="#00E5FF" />
+
+    <!-- Top-right vertical bar -->
+    <View
+        android:layout_width="3dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="88dp"
+        android:layout_marginRight="32dp"
+        android:background="#00E5FF" />
+
+    <!-- ── Top instruction bar ───────────────────────────────────────── -->
     <TextView
         android:id="@+id/Helper"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:background="#99000000"
+        android:background="#CC0A0E14"
+        android:fontFamily="sans-serif-condensed"
         android:gravity="center"
-        android:padding="15dp"
-        android:text="Position face and press Take Image"
-        android:textColor="#FFFFFF" />
+        android:letterSpacing="0.1"
+        android:padding="16dp"
+        android:text="POSITION FACE AND PRESS CAPTURE"
+        android:textColor="#00E5FF"
+        android:textSize="13sp" />
 
-    <LinearLayout
+    <!-- Cyan accent line under header -->
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="#CC000000"
-        android:orientation="horizontal"
-        android:padding="10dp"
-        android:weightSum="3">
+        android:layout_height="2dp"
+        android:layout_below="@+id/Helper"
+        android:background="#00E5FF" />
 
-        <Button
-            android:id="@+id/button_take_image"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Take Image" />
-
-        <Button
-            android:id="@+id/button_retake"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Retake"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/button_classify"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Classify"
-            android:visibility="gone"
-            android:backgroundTint="#4CAF50" />
-    </LinearLayout>
-
+    <!-- Debug ImageView — hidden, ID preserved for Java code -->
     <ImageView
         android:id="@+id/debug_image_view"
         android:layout_width="128dp"
@@ -64,5 +86,102 @@
         android:background="#FF0000"
         android:padding="2dp"
         android:visibility="gone" />
+
+    <!-- ── Bottom action bar ─────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#E60A0E14"
+        android:orientation="vertical">
+
+        <!-- Top accent stripe -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="#00E5FF" />
+
+        <!-- Mode label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:letterSpacing="0.2"
+            android:paddingTop="10dp"
+            android:paddingBottom="4dp"
+            android:text="FACE RECOGNITION MODE"
+            android:textColor="#6B7F94"
+            android:textSize="10sp" />
+
+        <!-- Three-button row — all buttons are direct children, no wrappers -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingBottom="24dp"
+            android:paddingTop="8dp"
+            android:weightSum="3">
+
+            <!-- Capture: solid cyan fill, direct child so setVisibility works -->
+            <Button
+                android:id="@+id/button_take_image"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="#00E5FF"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:text="CAPTURE"
+                android:textColor="#0A0E14"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null" />
+
+            <!--
+                Retake: direct Button child — no wrapper FrameLayout.
+                Visibility is toggled by CameraActivity.java directly on
+                this button ID, so it must not be buried inside a container.
+                Border effect achieved via a solid grey background with
+                inset padding on the button text instead.
+            -->
+            <Button
+                android:id="@+id/button_retake"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:background="#3A4A5A"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:text="RETAKE"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:stateListAnimator="@null" />
+
+            <!-- Confirm: solid green, direct Button child -->
+            <Button
+                android:id="@+id/button_classify"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="#2ECC71"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:text="CONFIRM"
+                android:textColor="#0A0E14"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:stateListAnimator="@null" />
+
+        </LinearLayout>
+    </LinearLayout>
 
 </RelativeLayout>
