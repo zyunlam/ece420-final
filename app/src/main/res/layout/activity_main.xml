@@ -1,39 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="#0A0E14"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
     tools:context="com.ece420.lab6.MainActivity">
 
-    <TextView
-        android:id="@+id/MainTitle"
-        android:layout_width="wrap_content"
+    <!-- Top cyan accent stripe -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="#00E5FF" />
+
+    <!-- Logo + Title area -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!--
+            Camera-lens icon: three concentric circles.
+            Outer cyan ring (104dp) > dark cutout (80dp) > cyan dot (30dp).
+            Built entirely from rounded FrameLayout/View trick:
+            each circle is a View whose background is a solid color;
+            size difference creates the "ring" illusion.
+        -->
+        <FrameLayout
+            android:layout_width="104dp"
+            android:layout_height="104dp"
+            android:layout_gravity="center_horizontal">
+
+            <!-- Outer cyan circle -->
+            <View
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:background="#00E5FF" />
+
+            <!-- Dark mask — punches hole to make ring -->
+            <View
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:background="#0A0E14" />
+
+            <!-- Inner cyan dot -->
+            <View
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:background="#00E5FF" />
+
+        </FrameLayout>
+
+        <!-- App title -->
+        <TextView
+            android:id="@+id/MainTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.25"
+            android:text="F.A.C.E."
+            android:textColor="#00E5FF"
+            android:textSize="42sp"
+            android:textStyle="bold" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.35"
+            android:text="SMART DOORBELL SYSTEM"
+            android:textColor="#6B7F94"
+            android:textSize="12sp" />
+
+        <!-- Thin cyan rule -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="20dp"
+            android:background="#00E5FF" />
+
+    </LinearLayout>
+
+    <!-- Bottom action area -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"
-        android:text="F.A.C.E. Control Center"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp"
+        android:paddingBottom="48dp"
+        android:paddingTop="16dp">
 
-    <Button
-        android:id="@+id/button_enroll_mode"
-        android:layout_width="280dp"
-        android:layout_height="60dp"
-        android:layout_centerInParent="true"
-        android:text="Enroll New Member" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.2"
+            android:text="SELECT MODE"
+            android:textColor="#6B7F94"
+            android:textSize="11sp" />
 
-    <Button
-        android:id="@+id/button_recognition_mode"
-        android:layout_width="280dp"
-        android:layout_height="60dp"
-        android:layout_below="@+id/button_enroll_mode"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:text="Run Doorbell System" />
+        <!--
+            Enroll: outline ghost button effect achieved by wrapping
+            the Button in a cyan-background FrameLayout (acts as border)
+            with 2dp padding, and setting the Button background to #0A0E14.
+        -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:background="#00E5FF"
+            android:padding="2dp">
 
-</RelativeLayout>
+            <Button
+                android:id="@+id/button_enroll_mode"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#0A0E14"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.15"
+                android:text="ENROLL NEW MEMBER"
+                android:textColor="#00E5FF"
+                android:textSize="15sp"
+                android:stateListAnimator="@null" />
+
+        </FrameLayout>
+
+        <!-- Run Doorbell: solid cyan fill -->
+        <Button
+            android:id="@+id/button_recognition_mode"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="14dp"
+            android:background="#00E5FF"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.15"
+            android:text="&#9654;  RUN DOORBELL"
+            android:textColor="#0A0E14"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:stateListAnimator="@null" />
+
+        <!-- Status indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.2"
+            android:text="&#9679; SYSTEM READY"
+            android:textColor="#2ECC71"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+
+</LinearLayout>
