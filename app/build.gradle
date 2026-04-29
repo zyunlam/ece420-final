@@ -1,4 +1,9 @@
+plugins {
+    id("de.undercouch.download") version "5.7.0"
+}
+
 apply plugin: 'com.android.application'
+apply plugin: 'de.undercouch.download'
 
 android {
     namespace 'com.ece420.lab6'
@@ -22,12 +27,20 @@ android {
     }
 }
 
+project.ext.ASSET_DIR = projectDir.toString() + '/src/main/assets'
+
+// Download default models; if you wish to use your own models then
+// place them in the "assets" directory and comment out this line.
+apply from:'download_models.gradle'
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.6.1' // Added for modern UI support
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.vectordrawable:vectordrawable:1.0.1'
     implementation 'androidx.core:core-ktx:1.1.0'
+
+    implementation 'com.google.mediapipe:tasks-vision:latest.release'
 
     // This requires the OpenCV module to be imported as a project
     implementation project(':opencv')
