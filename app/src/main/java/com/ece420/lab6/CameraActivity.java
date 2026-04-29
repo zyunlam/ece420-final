@@ -75,6 +75,31 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         return result;
     }
 
+    private void classifyFace(Bitmap faceBmp) {
+        int pixelCount = 128 * 128;
+        int[] pixels = new int[pixelCount];
+        faceBmp.getPixels(pixels, 0, 128, 0, 0, 128, 128);
+
+        double[] doubleFace = new double[pixelCount];
+        for (int i = 0; i < pixelCount; i++) {
+            // Convert to grayscale: (R + G + B) / 3 or just use Red channel if already gray
+            int p = pixels[i];
+            int r = (p >> 16) & 0xff;
+            int g = (p >> 8) & 0xff;
+            int b = p & 0xff;
+            doubleFace[i] = (r + g + b) / 3.0;
+        }
+
+        // Now run your existing classification
+        ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
+        String id_result = identification.get(result.getIndex());
+        Log.i("CameraActivity", "Identified " + id_result);
+        // Update UI with the result
+        runOnUiThread(() -> {
+            textHelper.setText("Identified: " + id_result + " (Dist: " + (int)result.getDistance() + ")");
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,13 +180,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     Bitmap overlayBitmap = Bitmap.createBitmap(overlayView.getWidth(), overlayView.getHeight(), Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(overlayBitmap);
 
-
                     android.graphics.Paint paint = new android.graphics.Paint();
                     paint.setColor(android.graphics.Color.GREEN); // Green for "Detected"
                     paint.setStyle(android.graphics.Paint.Style.STROKE);
                     paint.setStrokeWidth(10.0f);
 
-                    // 4. Draw Boxes
+                    // Draw bounding boxes
                     if (result.detections() != null) {
                         float scaleX = (float) overlayView.getWidth() / cameraBitmap.getWidth();
                         float scaleY = (float) overlayView.getHeight() / cameraBitmap.getHeight();
@@ -178,11 +202,27 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                         }
                     }
 
-                    // 5. Display the boxes on the ImageView
+                    // Display boxes
                     overlayView.setImageBitmap(overlayBitmap);
 
-                    if (result.detections().size() > 0) {
-                        Log.i("FaceDetector", "Found " + result.detections().size() + " faces");
+                    if (result.detections() != null && !result.detections().isEmpty()) {
+                        // Get the bounding box of the first detected face
+                        RectF box = result.detections().get(0).boundingBox();
+
+                        // Clamp coordinates to ensure they stay within the Bitmap boundaries
+                        int left = Math.max(0, (int) box.left);
+                        int top = Math.max(0, (int) box.top);
+                        int widthRect = Math.min((int) box.width(), cameraBitmap.getWidth() - left);
+                        int heightRect = Math.min((int) box.height(), cameraBitmap.getHeight() - top);
+
+                        // Create the cropped "Bounded Image"
+                        Bitmap faceCrop = Bitmap.createBitmap(cameraBitmap, left, top, widthRect, heightRect);
+
+                        // Resize for your FisherClassifier (which expects 128x128)
+                        Bitmap resizedFace = Bitmap.createScaledBitmap(faceCrop, 128, 128, true);
+
+                        // Now you can pass 'resizedFace' to your classification logic
+                        classifyFace(resizedFace);
                     }
                     // This halts the hardware stream, freezing the last frame on screen
                     camera.stopPreview();
@@ -191,32 +231,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 btnTakeImage.setVisibility(View.GONE);
                 btnRetake.setVisibility(View.VISIBLE);
                 btnClassify.setVisibility(View.VISIBLE);
-                textHelper.setText("Processing Face for Identification...");
-
-                // 1. Process the raw captured frame
-                // This returns a 128x128 cropped, grayscale, equalized byte array
-                byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
-
-                double[] doubleFace = new double[processedFace.length];
-                for (int i = 0; i < doubleFace.length; i++) {
-                    doubleFace[i] = (double) processedFace[i];
-                }
-                // FOR DEBUGGING: Convert to Bitmap to see it (Optional)
-                // Can use to verify the crop/histEq worked before classification
-                // Bitmap finalFaceBmp = processor.getBitmapFromGrayscale(processedFace, 128, 128);
-
-                // Let's process the face and stuff
-                ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
-                // Then we say something like
-                String id_result = identification.get(result.getIndex());
-                if (id_result != null && result.getDistance() < 1500) {
-                    // Okay!
-                    textHelper.setText("Hello " + id_result + "(Distance: " + result.getDistance() + ")");
-                } else {
-                    // Not okay
-                    textHelper.setText("Did not identify person (We think it's " + id_result  + ")(Distance: " + result.getDistance() + ")");
-                }
-            }
+        }
         });
 
 
