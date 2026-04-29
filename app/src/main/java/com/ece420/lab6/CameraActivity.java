@@ -19,6 +19,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.View;
 
@@ -62,6 +63,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private byte[] frozenData;
     private FacePreprocessor processor = new FacePreprocessor();
     private FaceDetector detector;
+
+    private ImageView overlayView;
 
     private FisherClassifier classifier;
     private HashMap<Integer, String> identification;
@@ -126,6 +129,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         // Setup Single Surface View for HistEq Display
         surfaceView = (SurfaceView) findViewById(R.id.ViewOrigin);
+
+        overlayView = (ImageView) findViewById(R.id.overlay_view);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
 
@@ -147,49 +152,34 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     Bitmap cameraBitmap = getBitmapFromVUY(frozenData, width, height);
                     FaceDetectorResult result = detectImage(cameraBitmap);
 
-                    Canvas canvas = null;
+                    Bitmap overlayBitmap = Bitmap.createBitmap(overlayView.getWidth(), overlayView.getHeight(), Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(overlayBitmap);
 
 
-                    try {
-                        canvas = surfaceHolder.lockCanvas();
+                    android.graphics.Paint paint = new android.graphics.Paint();
+                    paint.setColor(android.graphics.Color.GREEN); // Green for "Detected"
+                    paint.setStyle(android.graphics.Paint.Style.STROKE);
+                    paint.setStrokeWidth(10.0f);
 
-                        if (canvas != null) {
-                            // Draw the background image first so the box appears over it
-                            onCameraFrame(canvas, frozenData);
+                    // 4. Draw Boxes
+                    if (result.detections() != null) {
+                        float scaleX = (float) overlayView.getWidth() / cameraBitmap.getWidth();
+                        float scaleY = (float) overlayView.getHeight() / cameraBitmap.getHeight();
 
-                            // Setup Paint for the bounding box
-                            android.graphics.Paint paint = new android.graphics.Paint();
-                            paint.setColor(android.graphics.Color.RED);
-                            paint.setStyle(android.graphics.Paint.Style.STROKE);
-                            paint.setStrokeWidth(5.0f);
-
-                            if (result.detections() != null && !result.detections().isEmpty()) {
-                                for (Detection detection : result.detections()) {
-                                    // Get the bounding box from Mediapipe
-                                    RectF box = detection.boundingBox();
-
-                                    // Map Bitmap coordinates to Canvas coordinates
-                                    // Since onCameraFrame scales the bitmap to the canvas size:
-                                    float scaleX = (float) canvas.getWidth() / cameraBitmap.getWidth();
-                                    float scaleY = (float) canvas.getHeight() / cameraBitmap.getHeight();
-
-                                    float left = box.left * scaleX;
-                                    float top = box.top * scaleY;
-                                    float right = box.right * scaleX;
-                                    float bottom = box.bottom * scaleY;
-
-                                    // Draw the rectangle
-                                    canvas.drawRect(left, top, right, bottom, paint);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e("CameraActivity", "Error drawing to canvas", e);
-                    } finally {
-                        if (canvas != null) {
-                            surfaceHolder.unlockCanvasAndPost(canvas);
+                        for (Detection detection : result.detections()) {
+                            RectF box = detection.boundingBox();
+                            canvas.drawRect(
+                                    box.left * scaleX,
+                                    box.top * scaleY,
+                                    box.right * scaleX,
+                                    box.bottom * scaleY,
+                                    paint
+                            );
                         }
                     }
+
+                    // 5. Display the boxes on the ImageView
+                    overlayView.setImageBitmap(overlayBitmap);
 
                     if (result.detections().size() > 0) {
                         Log.i("FaceDetector", "Found " + result.detections().size() + " faces");
