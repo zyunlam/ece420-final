@@ -243,35 +243,35 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
         });
 
-        btnClassify.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (frozenData != null) {
-                    textHelper.setText("Processing Face for Identification...");
-
-                    byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
-
-                    double[] doubleFace = new double[processedFace.length];
-                    for (int i = 0; i < doubleFace.length; i++) {
-                        // FIX #2: byte sign extension — must use & 0xFF
-                        doubleFace[i] = (double) (processedFace[i] & 0xFF);
-                    }
-
-                    ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
-                    String id_result = identification.get(result.getIndex());
-                    List<ClassifierResult> top = result.getTopMatches();
-                    StringBuilder sb = new StringBuilder("Top Matches:\n");
-                    if (top != null) {
-                        for (int i = 0; i < top.size(); i++) {
-                            String name = identification.get(top.get(i).getIndex());
-                            sb.append((i + 1)).append(". ").append(name)
-                                    .append(" (Dist: ").append((int) top.get(i).getDistance()).append(")\n");
-                        }
-                    }
-                    textHelper.setText(sb.toString());
-                }
-            }
-        });
+//        btnClassify.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (frozenData != null) {
+//                    textHelper.setText("Processing Face for Identification...");
+//
+//                    byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
+//
+//                    double[] doubleFace = new double[processedFace.length];
+//                    for (int i = 0; i < doubleFace.length; i++) {
+//                        // FIX #2: byte sign extension — must use & 0xFF
+//                        doubleFace[i] = (double) (processedFace[i] & 0xFF);
+//                    }
+//
+//                    ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
+//                    String id_result = identification.get(result.getIndex());
+//                    List<ClassifierResult> top = result.getTopMatches();
+//                    StringBuilder sb = new StringBuilder("Top Matches:\n");
+//                    if (top != null) {
+//                        for (int i = 0; i < top.size(); i++) {
+//                            String name = identification.get(top.get(i).getIndex());
+//                            sb.append((i + 1)).append(". ").append(name)
+//                                    .append(" (Dist: ").append((int) top.get(i).getDistance()).append(")\n");
+//                        }
+//                    }
+//                    textHelper.setText(sb.toString());
+//                }
+//            }
+//        });
     }
 
     private Bitmap getBitmapFromVUY(byte[] data, int width, int height) {
