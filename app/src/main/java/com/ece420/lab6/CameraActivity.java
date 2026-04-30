@@ -1,7 +1,7 @@
 package com.ece420.lab6;
 
 import static com.ece420.lab6.FacePreprocessor.histEq;
-
+import java.util.List;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.graphics.BitmapFactory;
@@ -39,10 +39,9 @@ import com.google.mediapipe.tasks.components.containers.Detection;
 
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
-    private byte[] lastPreviewData; // Tracks the most recent frame without copying
+    private byte[] lastPreviewData;
 
-
-    // UI Variables - Only one SurfaceView now
+    // UI Variables
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private TextView textHelper;
@@ -75,34 +74,40 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         return result;
     }
 
+    /**
+     * FIX #1 + #2: Unified classification path.
+     * Previously used (r+g+b)/3 grayscale averaging and skipped the full
+     * FacePreprocessor pipeline. Now routes through processBitmapForTraining()
+     * so the grayscale formula, scaling, cropping, and histogram equalization
+     * are identical to training. Also fixed the byte sign extension bug (& 0xFF).
+     */
     private void classifyFace(Bitmap faceBmp) {
-        int pixelCount = 128 * 128;
-        int[] pixels = new int[pixelCount];
-        faceBmp.getPixels(pixels, 0, 128, 0, 0, 128, 128);
+        int pixelCount = 96 * 96;
 
-        byte[] doubleFace = new byte[pixelCount];
-        for (int i = 0; i < pixelCount; i++) {
-            // Convert to grayscale: (R + G + B) / 3 or just use Red channel if already gray
-            int p = pixels[i];
-            int r = (p >> 16) & 0xff;
-            int g = (p >> 8) & 0xff;
-            int b = p & 0xff;
-            doubleFace[i] = (byte) ((r + g + b) / 3.0);
-        }
+        // Use the same preprocessing pipeline as training data
+        byte[] processed = processor.processBitmapForTraining(faceBmp);
 
-        // Now let's histogram equalize
-        byte[] histeqresult = new byte[pixelCount];
-        histEq(doubleFace, histeqresult, 128, 128);
         double[] classificationInput = new double[pixelCount];
         for (int i = 0; i < pixelCount; i++) {
-            classificationInput[i] = (double) histeqresult[i];
+            // FIX #2: Must mask with 0xFF — Java bytes are signed (-128..127),
+            // so any pixel > 127 would go negative without this.
+            classificationInput[i] = (double) (processed[i] & 0xFF);
         }
+
         ClassifierResult result = classifier.ClassifyFace(classificationInput, 3000);
         String id_result = identification.get(result.getIndex());
-        Log.i("CameraActivity", "Identified " + id_result);
-        // Update UI with the result
+        Log.i("CameraActivity", "Identified " + id_result + " dist=" + result.getDistance());
         runOnUiThread(() -> {
-            textHelper.setText("Identified: " + id_result + " (Dist: " + (int)result.getDistance() + ")");
+            StringBuilder sb = new StringBuilder("Top Matches:\n");
+            List<ClassifierResult> top = result.getTopMatches();
+            if (top != null) {
+                for (int i = 0; i < top.size(); i++) {
+                    String name = identification.get(top.get(i).getIndex());
+                    sb.append((i + 1)).append(". ").append(name)
+                            .append(" (Dist: ").append((int) top.get(i).getDistance()).append(")\n");
+                }
+            }
+            textHelper.setText(sb.toString());
         });
     }
 
@@ -118,7 +123,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         baseOptionsBuilder.setModelAssetPath(modelName);
 
         try {
-            FaceDetector.FaceDetectorOptions.Builder optionsBuilder = FaceDetector.FaceDetectorOptions.builder().setBaseOptions(baseOptionsBuilder.build()).setMinDetectionConfidence(0.5f ).setRunningMode(RunningMode.IMAGE);
+            FaceDetector.FaceDetectorOptions.Builder optionsBuilder = FaceDetector.FaceDetectorOptions.builder().setBaseOptions(baseOptionsBuilder.build()).setMinDetectionConfidence(0.5f).setRunningMode(RunningMode.IMAGE);
             FaceDetector.FaceDetectorOptions options = optionsBuilder.build();
             detector = FaceDetector.createFromOptions(getApplicationContext(), options);
         } catch (IllegalStateException e) {
@@ -128,13 +133,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
         Log.i("CameraActivity", "Loaded face detector");
 
-        // put training in a background thread
+        // Put training in a background thread
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     startTraining();
-                    // Update UI on the main thread when done
                     runOnUiThread(() -> textHelper.setText("Training complete!"));
                 } catch (IOException e) {
                     Log.e("CameraActivity", "Training failed", e);
@@ -142,14 +146,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
         }).start();
 
-
-
-        // try {
-        //     startTraining();
-        // } catch (IOException ioe) {
-        //     Log.e("CameraActivity", "IOException when training! " + ioe.getMessage());
-        // }
-        // Init classifier and stuff
         getWindow().setFormat(PixelFormat.UNKNOWN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_camera);
@@ -158,27 +154,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         textHelper = (TextView) findViewById(R.id.Helper);
         textHelper.setText("Align face in center and press Take Image");
 
-        // Setup Single Surface View for HistEq Display
         surfaceView = (SurfaceView) findViewById(R.id.ViewOrigin);
-
         overlayView = (ImageView) findViewById(R.id.overlay_view);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
 
-        // --- BUTTON LOGIC ---
         btnTakeImage = (Button) findViewById(R.id.button_take_image);
         btnRetake = (Button) findViewById(R.id.button_retake);
         btnClassify = (Button) findViewById(R.id.button_classify);
-
 
         btnTakeImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (camera != null && lastPreviewData != null) {
                     isFrozen = true;
-                    // Capture the specific frame for your Fisherface classification
                     frozenData = lastPreviewData.clone();
-
 
                     Bitmap cameraBitmap = getBitmapFromVUY(frozenData, width, height);
                     FaceDetectorResult result = detectImage(cameraBitmap);
@@ -187,11 +177,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     Canvas canvas = new Canvas(overlayBitmap);
 
                     android.graphics.Paint paint = new android.graphics.Paint();
-                    paint.setColor(android.graphics.Color.GREEN); // Green for "Detected"
+                    paint.setColor(android.graphics.Color.GREEN);
                     paint.setStyle(android.graphics.Paint.Style.STROKE);
                     paint.setStrokeWidth(10.0f);
 
-                    // Draw bounding boxes
                     if (result.detections() != null) {
                         float scaleX = (float) overlayView.getWidth() / cameraBitmap.getWidth();
                         float scaleY = (float) overlayView.getHeight() / cameraBitmap.getHeight();
@@ -208,51 +197,37 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                         }
                     }
 
-                    // Display boxes
                     overlayView.setImageBitmap(overlayBitmap);
 
                     if (result.detections() != null && !result.detections().isEmpty()) {
-                        // Get the bounding box of the first detected face
                         RectF box = result.detections().get(0).boundingBox();
 
-                        // Clamp coordinates to ensure they stay within the Bitmap boundaries
                         int left = Math.max(0, (int) box.left);
                         int top = Math.max(0, (int) box.top);
                         int widthRect = Math.min((int) box.width(), cameraBitmap.getWidth() - left);
                         int heightRect = Math.min((int) box.height(), cameraBitmap.getHeight() - top);
 
-                        // Create the cropped "Bounded Image"
                         Bitmap faceCrop = Bitmap.createBitmap(cameraBitmap, left, top, widthRect, heightRect);
+                        Bitmap resizedFace = Bitmap.createScaledBitmap(faceCrop, 96, 96, true);
 
-                        // Resize for your FisherClassifier (which expects 128x128)
-                        Bitmap resizedFace = Bitmap.createScaledBitmap(faceCrop, 128, 128, true);
-
-                        // Now you can pass 'resizedFace' to your classification logic
+                        // FIX #1: classifyFace now uses the unified preprocessing pipeline
                         classifyFace(resizedFace);
                     }
-                    // This halts the hardware stream, freezing the last frame on screen
                     camera.stopPreview();
                     camera.setPreviewCallback(null);
                 }
                 btnTakeImage.setVisibility(View.GONE);
                 btnRetake.setVisibility(View.VISIBLE);
                 btnClassify.setVisibility(View.VISIBLE);
-        }
+            }
         });
-
 
         btnRetake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (camera != null) {
                     isFrozen = false;
-
-                    // 1. RESTART THE HARDWARE PREVIEW
-                    // This tells the camera sensor to start pushing frames to the SurfaceView again
                     camera.startPreview();
-
-                    // 2. RE-ATTACH THE CALLBACK
-                    // This ensures lastPreviewData starts updating 30 times a second again
                     camera.setPreviewCallback(new PreviewCallback() {
                         public void onPreviewFrame(byte[] data, Camera camera) {
                             if (!isFrozen) {
@@ -261,8 +236,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                         }
                     });
                 }
-
-                // Update UI visibility
                 btnTakeImage.setVisibility(View.VISIBLE);
                 btnRetake.setVisibility(View.GONE);
                 btnClassify.setVisibility(View.GONE);
@@ -276,47 +249,37 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 if (frozenData != null) {
                     textHelper.setText("Processing Face for Identification...");
 
-                    // 1. Process the raw captured frame
-                    // This returns a 128x128 cropped, grayscale, equalized byte array
                     byte[] processedFace = processor.processCapturedFrame(frozenData, width, height);
 
                     double[] doubleFace = new double[processedFace.length];
                     for (int i = 0; i < doubleFace.length; i++) {
-                        doubleFace[i] = (double) processedFace[i];
+                        // FIX #2: byte sign extension — must use & 0xFF
+                        doubleFace[i] = (double) (processedFace[i] & 0xFF);
                     }
-                    // FOR DEBUGGING: Convert to Bitmap to see it (Optional)
-                    // Can use to verify the crop/histEq worked before classification
-                    // Bitmap finalFaceBmp = processor.getBitmapFromGrayscale(processedFace, 128, 128);
 
-                    // Let's process the face and stuff
                     ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
-                    // Then we say something like
                     String id_result = identification.get(result.getIndex());
-                    if (id_result != null && result.getDistance() < 1500) {
-                        // Okay!
-                        textHelper.setText("Hello " + id_result + "(Distance: " + result.getDistance() + ")");
-                    } else {
-                        // Not okay
-                        textHelper.setText("Did not identify person (We think it's " + id_result  + ")(Distance: " + result.getDistance() + ")");
+                    List<ClassifierResult> top = result.getTopMatches();
+                    StringBuilder sb = new StringBuilder("Top Matches:\n");
+                    if (top != null) {
+                        for (int i = 0; i < top.size(); i++) {
+                            String name = identification.get(top.get(i).getIndex());
+                            sb.append((i + 1)).append(". ").append(name)
+                                    .append(" (Dist: ").append((int) top.get(i).getDistance()).append(")\n");
+                        }
                     }
+                    textHelper.setText(sb.toString());
                 }
             }
         });
     }
 
     private Bitmap getBitmapFromVUY(byte[] data, int width, int height) {
-        // Convert the raw YUV data to an RGB int array using your existing helper
         int[] argb = yuv2rgb(data);
-
-        //  Create the initial Bitmap
         Bitmap bitmap = Bitmap.createBitmap(argb, width, height, Bitmap.Config.ARGB_8888);
-
-        // Handle Rotation and Mirroring (Standard for Front Camera)
         Matrix matrix = new Matrix();
-        // Front cameras are usually mounted sideways and mirrored
         matrix.postRotate(270);
         matrix.postScale(-1, 1);
-
         return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
     }
 
@@ -326,7 +289,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             int frontCameraId = -1;
             int numberOfCameras = Camera.getNumberOfCameras();
 
-            // 1. Loop through available cameras to find the front-facing sensor
             for (int i = 0; i < numberOfCameras; i++) {
                 Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.getCameraInfo(i, info);
@@ -336,17 +298,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 }
             }
 
-            // 2. Open the front camera if found
             if (frontCameraId != -1) {
                 camera = Camera.open(frontCameraId);
             } else {
-                camera = Camera.open(); // Fallback to back camera
+                camera = Camera.open();
             }
 
             if (camera != null) {
                 try {
-                    // 3. Connect the camera directly to the surface holder
-                    // This lets the hardware draw the color feed efficiently
                     camera.setPreviewDisplay(surfaceHolder);
 
                     Camera.Parameters parameters = camera.getParameters();
@@ -357,8 +316,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     camera.setPreviewCallback(new Camera.PreviewCallback() {
                         public void onPreviewFrame(byte[] data, Camera camera) {
                             if (!isFrozen) {
-                                // Update our reference but DO NOT lock canvas here
-                                // Use 'lastPreviewData' to avoid constant cloning
                                 lastPreviewData = data;
                             }
                         }
@@ -371,78 +328,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
         }
     }
-//    public void surfaceCreated(SurfaceHolder holder) {
-//        if (!previewing) {
-//            camera = Camera.open();
-//            if (camera != null) {
-//                try {
-//                    Camera.Parameters parameters = camera.getParameters();
-//                    parameters.setPreviewSize(width, height);
-//                    camera.setParameters(parameters);
-//                    camera.setDisplayOrientation(90);
-//                    camera.setPreviewDisplay(surfaceHolder);
-//                    camera.setPreviewCallback(new PreviewCallback() {
-//                        public void onPreviewFrame(byte[] data, Camera camera) {
-//                            if (!isFrozen) {
-//                                frozenData = data.clone();
-//                                Canvas canvas = surfaceHolder.lockCanvas(null);
-//                                if (canvas != null) {
-//                                    // Always display the Equalized version [cite: 238, 242, 247]
-//                                    onCameraFrame(canvas, data);
-//                                    surfaceHolder.unlockCanvasAndPost(canvas);
-//                                }
-//                            }
-//                        }
-//                    });
-//                    camera.startPreview();
-//                    previewing = true;
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//    }
 
     protected void onCameraFrame(Canvas canvas, byte[] data) {
         Matrix matrix = new Matrix();
-
-        // Front camera orientation and mirroring for a "mirror" effect
         matrix.postRotate(270);
         matrix.postScale(-1, 1);
 
-        // 1. SKIP HISTEQ - Pass the raw 'data' directly to the converter
-        // We are no longer using 'processedData' or 'histEq' here.
         int[] retData = yuv2rgb(data);
-
-        // 2. DRAW TO CANVAS
-        // Create the bitmap from the raw YUV-to-RGB conversion
         Bitmap bmp = Bitmap.createBitmap(retData, width, height, Bitmap.Config.ARGB_8888);
         bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-
-        // Ensure the rect matches your portrait orientation
         canvas.drawBitmap(bmp, new Rect(0, 0, bmp.getWidth(), bmp.getHeight()),
                 new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
     }
 
-//    protected void onCameraFrame(Canvas canvas, byte[] data) {
-//        Matrix matrix = new Matrix();
-//        matrix.postRotate(90);
-//
-//        // Apply manual Histogram Equalization immediately [cite: 142, 247, 282]
-//        byte[] histeqData = FacePreprocessor.histEq(data, width, height);
-//
-//        // Convert YUV to RGB for screen display
-//        int[] retData = yuv2rgb(histeqData);
-//
-//        Bitmap bmp = Bitmap.createBitmap(retData, width, height, Bitmap.Config.ARGB_8888);
-//        bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-//        canvas.drawBitmap(bmp, new Rect(0, 0, height, width), new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
-//    }
-
-
-
-
-//     -- FOR COLOR FEED --
     public int[] yuv2rgb(byte[] data) {
         final int frameSize = width * height;
         int[] rgb = new int[frameSize];
@@ -452,8 +350,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 int y = (0xff & ((int) data[yp])) - 16;
                 y = y < 0 ? 0 : y;
                 if ((i & 1) == 0) {
-                    v = (0xff & data[uvp++]) - 128;
-                    u = (0xff & data[uvp++]) - 128;
+                    v = (0xff & data[uvp++]) - 96;
+                    u = (0xff & data[uvp++]) - 96;
                 }
                 int y1192 = 1192 * y;
                 int r = (y1192 + 1634 * v);
@@ -482,10 +380,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
     public void startTraining() throws IOException {
         System.out.println("startTraining called\n");
-        // 1. Map names to Integer Labels for LDA
 
-        int totalImages = 30; // 3 members * 10 images each
-        int pixelCount = 128 * 128;
+        int pixelCount = 96 * 96;
 
         ArrayList<double[]> imageList = new ArrayList<>();
         ArrayList<Integer> labels = new ArrayList<Integer>();
@@ -494,29 +390,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         int label_idx = 0;
         for (String currentMember : getAssets().list("faces")) {
             identification.put(label_idx, currentMember);
-            File memberDir = new File(getFilesDir(), "faces/" + currentMember);
-            //new InputStreamReader(getAssets().open("filename.txt")
             String[] imageFiles = getAssets().list("faces/" + currentMember);
             if (imageFiles != null) {
                 for (String imgFile : imageFiles) {
-
-                    // Load and Process
                     Bitmap b = BitmapFactory.decodeStream(getAssets().open("faces/" + currentMember + "/" + imgFile));
                     byte[] processed = processor.processBitmapForTraining(b);
 
-                    // Convert processed byte[] to double[] for Jama Matrix math
                     double sum = 0;
                     double[] image_array = new double[pixelCount];
                     for (int p = 0; p < pixelCount; p++) {
+                        // & 0xFF to handle signed byte correctly
                         image_array[p] = (double) (processed[p] & 0xFF);
                         sum += image_array[p];
                     }
                     imageList.add(image_array);
                     Log.d("CameraActivity", "Sum of image: " + sum);
 
-                    labels.add(label_idx); // Assign the integer label
+                    labels.add(label_idx);
                     imageIndex++;
-                    b.recycle(); // Free memory immediately
+                    b.recycle();
                 }
                 label_idx++;
             } else {
@@ -533,10 +425,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             label_list[i] = labels.get(i);
         }
 
-        // 2. Feed the 30 images into the Fisher Classifier
-        // This triggers PCA, then LDA, then computes Class Averages
-        classifier.ComputeTrainingWeights(imageArray, label_list, 128, 128);
-
-        // textHelper.setText("Training complete for the 3 members");
+        classifier.ComputeTrainingWeights(imageArray, label_list, 96, 96);
     }
 }

@@ -11,7 +11,7 @@ import org.opencv.imgproc.Imgproc;
 
 public class FacePreprocessor {
     // Target size for Fisherface classification
-    private static final int TARGET_SIZE = 128;
+    private static final int TARGET_SIZE = 96;
 
     public byte[] processBitmapForTraining(Bitmap inputBmp) {
         int w = inputBmp.getWidth();

@@ -1,1 +1,1 @@
-C:\Users\zyunl\Downloads\lab6\lab6\opencv\build\intermediates\cxx\Debug\3wd3s1j4\obj\x86_64
+C:\Users\danie\420\opencv\build\intermediates\cxx\Debug\3wd3s1j4\obj\x86_64

@@ -11,6 +11,7 @@ import java.util.Map;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
+
 public class FisherClassifier {
     private Matrix fisherfaces;
     private Matrix A;
@@ -18,13 +19,12 @@ public class FisherClassifier {
     private Matrix training_weights;
     private double[] meanFace;
     Map<Integer, double[]> classWeights;
-
+    private double[][] trainingWeightArray;  // each training image in Fisher space
+    private int[] trainingLabels;            // label per training image
     private int[] targetSize;
     private int[] validLabels;
 
     public FisherClassifier() {}
-
-    // we should also have the option to load the fisher faces from the disk
 
     public static int[] argsort(final double[] a, final boolean ascending) {
         Integer[] indexes = new Integer[a.length];
@@ -44,19 +44,14 @@ public class FisherClassifier {
         return return_value;
     }
 
-
     public Matrix GetEigenfaces(Matrix A, int num_components) {
         Matrix A_transpose = A.transpose();
-        // Then compute the L matrix
         Matrix L = A_transpose.times(A);
         EigenvalueDecomposition decomposition = L.eig();
-        // We are a real matrix so surely we only have real eigenvalues
         double[] eigenvalues = decomposition.getRealEigenvalues();
         Matrix V = decomposition.getV();
-        // Sort it in descending value
         int[] indices = argsort(eigenvalues, false);
-        // Then we can get our eigenvectors matrix
-        // Construct the eigenvector_L matrix
+
         int N = A.getColumnDimension();
         int M = A.getRowDimension();
         int actualComponents = Math.min(num_components, N);
@@ -65,20 +60,12 @@ public class FisherClassifier {
 
         for (int i = 0; i < actualComponents; i++) {
             int sortedIdx = indices[i];
-
-            // Get the i-th eigenvector from the decomposition (column vector)
             Matrix vi = V.getMatrix(0, N - 1, sortedIdx, sortedIdx);
-
-            // Project into high-dimensional space: ui = A * vi
             Matrix ui = A.times(vi);
-
-            // Normalize the eigenface
             double norm = ui.norm2();
             if (norm > 1e-8) {
                 ui = ui.times(1.0 / norm);
             }
-
-            // Store in the resulting matrix
             eigenfaces.setMatrix(0, M - 1, i, i, ui);
         }
 
@@ -110,7 +97,6 @@ public class FisherClassifier {
         Matrix Sw = new Matrix(M, M);
         Matrix Sb = new Matrix(M, M);
         for (int c : classes) {
-            // Filter rows belonging to class c
             ArrayList<Integer> classIndices = new ArrayList<>();
             for (int i = 0; i < labels.length; i++) {
                 if (labels[i] == c) classIndices.add(i);
@@ -122,7 +108,6 @@ public class FisherClassifier {
                 X_c.setMatrix(i, i, 0, K - 1, X_pca.getMatrix(classIndices.get(i), classIndices.get(i), 0, K - 1));
             }
 
-            // Mean of class c
             double[] meanCArr = new double[K];
             for (int j = 0; j < K; j++) {
                 double sum = 0;
@@ -131,14 +116,12 @@ public class FisherClassifier {
             }
             Matrix meanC = new Matrix(meanCArr, 1);
 
-            // Within-class scatter: Sw += (X_c - mean_c)^T * (X_c - mean_c)
             for (int i = 0; i < n_c; i++) {
                 Matrix row = X_c.getMatrix(i, i, 0, K - 1);
                 Matrix diff = row.minus(meanC);
                 Sw = Sw.plus(diff.transpose().times(diff));
             }
 
-            // Between-class scatter: Sb += n_c * (mean_c - mean_total)^T * (mean_c - mean_total)
             Matrix meanDiff = meanC.minus(meanTotal);
             Sb = Sb.plus(meanDiff.transpose().times(meanDiff).times(n_c));
         }
@@ -150,7 +133,6 @@ public class FisherClassifier {
         int[] ldaIndices = argsort(ldaEigenvalues, false);
         Matrix V_lda = ldaDecomp.getV();
 
-        // 5. Sort and select LDA components (C-1 components max)
         int num_lda_components = classes.length - 1;
         Matrix W_lda = new Matrix(K, num_lda_components);
         for (int i = 0; i < num_lda_components; i++) {
@@ -160,7 +142,6 @@ public class FisherClassifier {
     }
 
     public Map<Integer, double[]> computeClassAverages(Matrix trainingWeights, int[] labels) {
-        // 1. Group weight vectors by label
         Map<Integer, List<double[]>> groupedWeights = new HashMap<>();
 
         int numImages = trainingWeights.getRowDimension();
@@ -171,11 +152,9 @@ public class FisherClassifier {
             if (!groupedWeights.containsKey(label)) {
                 groupedWeights.put(label, new ArrayList<>());
             }
-            // Extract the row as an array
             groupedWeights.get(label).add(trainingWeights.getMatrix(i, i, 0, numFeatures - 1).getRowPackedCopy());
         }
 
-        // 2. Compute the mean for each group
         Map<Integer, double[]> classAverages = new HashMap<>();
 
         for (Integer label : groupedWeights.keySet()) {
@@ -188,7 +167,6 @@ public class FisherClassifier {
                 }
             }
 
-            // Divide by number of samples in this class
             for (int f = 0; f < numFeatures; f++) {
                 meanVector[f] /= weights.size();
             }
@@ -200,14 +178,13 @@ public class FisherClassifier {
     }
 
     /**
-     *
-     * @param imageList List of images in a vector
-     * @param labels Labels of each image and stuff
-     * @param width int width, like 128
-     * @param height 128 as well. This should be the same as whatever the matrix is above and stuff
+     * FIX #3: Reduced PCA components from 80 to 40.
+     * With ~30 training images, requesting 80 PCA components retains noisy
+     * eigenvectors and destabilizes the Fisher subspace. 40 components keeps
+     * the most meaningful variance while staying well within the N-1 rank
+     * limit of the training scatter matrix.
      */
     public void ComputeTrainingWeights(double[][] imageList, int[] labels, int width, int height) {
-        // We need to populate the face data first
         Log.d("FisherClassifier", "Images: " + imageList.length);
         int numImages = imageList.length;
         int numPixels = imageList[0].length;
@@ -216,7 +193,6 @@ public class FisherClassifier {
         this.validLabels = labels;
         this.meanFace = new double[numPixels];
 
-        // 1. Calculate the mean face (Average of all images)
         for (int p = 0; p < numPixels; p++) {
             double sum = 0;
             for (int i = 0; i < numImages; i++) {
@@ -225,69 +201,87 @@ public class FisherClassifier {
             this.meanFace[p] = sum / numImages;
         }
 
-        // 2. Create the centered data matrix A
-        // We initialize A as (Pixels x Images) -> Column-major
         this.A = new Matrix(numPixels, numImages);
 
         for (int i = 0; i < numImages; i++) {
             for (int p = 0; p < numPixels; p++) {
-                // Subtract the mean: Phi = Image - Mean
                 double centeredValue = imageList[i][p] - this.meanFace[p];
                 this.A.set(p, i, centeredValue);
             }
         }
 
-        // FIX ME - Changing num components to 20 for now to test if it works
-        this.fisherfaces = GetFisherFaces(A, labels, 80);
+        // FIX #3: Reduced from 80 to 40 PCA components for better generalisation
+        // with small training sets (~30 images). Too many components includes
+        // noise eigenvectors that corrupt the Fisher subspace.
+        this.fisherfaces = GetFisherFaces(A, labels, 40);
         this.training_weights = A.transpose().times(fisherfaces);
-        this.classWeights = computeClassAverages(this.training_weights, labels);
 
+// NEW: store individual training samples
+        this.trainingWeightArray = training_weights.getArray();
+        this.trainingLabels = labels;
+
+// You can KEEP this if you still want centroid-based fallback/debugging
+        this.classWeights = computeClassAverages(this.training_weights, labels);
     }
 
     public ClassifierResult ClassifyFace(double[] flatImage, double threshold) {
-        // in case training doesn't finish before classification
         if (meanFace == null || fisherfaces == null) {
             return new ClassifierResult(-1, Double.MAX_VALUE);
         }
 
         int numPixels = flatImage.length;
-
-        // Subtract the mean face: phi_new = gamma_new - mean_face
         double[] phiNewArr = new double[numPixels];
         for (int i = 0; i < numPixels; i++) {
             phiNewArr[i] = flatImage[i] - meanFace[i];
         }
-        // Create a 1 x Pixels matrix
-        Matrix phiNew = new Matrix(phiNewArr, 1);
 
-        // Project into Fisher space: omega_new = phi_new * fisherfaces
-        // Result is a 1 x num_components matrix
+        Matrix phiNew = new Matrix(phiNewArr, 1);
         Matrix omegaNew = phiNew.times(fisherfaces);
         double[] omegaNewArr = omegaNew.getRowPackedCopy();
-        for (double d : omegaNewArr) {
-            Log.d("FisherClassifier", "ad" + d);
-        }
-        int bestLabel = -1;
-        double minDistance = Double.MAX_VALUE;
 
-        // 3. Find the closest class weight (Nearest Neighbor)
-        for (Map.Entry<Integer, double[]> entry : classWeights.entrySet()) {
-            double[] avgWeight = entry.getValue();
+        // Build a sorted list of all class distances
+        List<ClassifierResult> allResults = new ArrayList<>();
+        Map<Integer, Integer> voteCount = new HashMap<>();
+        for (int i = 0; i < trainingWeightArray.length; i++) {
+            double[] trainVec = trainingWeightArray[i];
 
-            // Calculate Euclidean Distance (L2 Norm)
             double distance = 0;
-            for (int i = 0; i < omegaNewArr.length; i++) {
-                double diff = omegaNewArr[i] - avgWeight[i];
+            for (int j = 0; j < omegaNewArr.length; j++) {
+                double diff = omegaNewArr[j] - trainVec[j];
                 distance += diff * diff;
             }
             distance = Math.sqrt(distance);
 
-            if (distance < minDistance) {
-                minDistance = distance;
+            int label = trainingLabels[i];
+
+            allResults.add(new ClassifierResult(label, distance));
+        }
+
+        // Sort ascending by distance
+        allResults.sort((a, b) -> Double.compare(a.getDistance(), b.getDistance()));
+
+        // Take top 10
+        List<ClassifierResult> topK = new ArrayList<>(
+                allResults.subList(0, Math.min(10, allResults.size()))
+        );
+// Majority voting
+        Map<Integer, Integer> votes = new HashMap<>();
+        for (ClassifierResult r : topK) {
+            int label = r.getIndex();
+            votes.put(label, votes.getOrDefault(label, 0) + 1);
+        }
+
+// Find winner
+        int bestLabel = -1;
+        int maxVotes = -1;
+
+        for (Map.Entry<Integer, Integer> entry : votes.entrySet()) {
+            if (entry.getValue() > maxVotes) {
+                maxVotes = entry.getValue();
                 bestLabel = entry.getKey();
             }
         }
-
-        return new ClassifierResult(bestLabel, minDistance);
+        ClassifierResult closest = topK.get(0);
+        return new ClassifierResult(bestLabel, closest.getDistance(), new ArrayList<>(topK));
     }
- }
+}
