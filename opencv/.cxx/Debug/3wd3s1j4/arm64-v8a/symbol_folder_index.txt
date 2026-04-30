@@ -1,1 +1,1 @@
-C:\Users\danie\420\opencv\build\intermediates\cxx\Debug\3wd3s1j4\obj\arm64-v8a
+C:\Users\sushr\ECE420\ece420-final-main\opencv\build\intermediates\cxx\Debug\3wd3s1j4\obj\arm64-v8a

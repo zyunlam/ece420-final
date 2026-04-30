@@ -46,7 +46,7 @@
 			],
 			"sysroot" : 
 			{
-				"path" : "C:/Users/danie/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot"
+				"path" : "C:/Users/sushr/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot"
 			}
 		}
 	],
