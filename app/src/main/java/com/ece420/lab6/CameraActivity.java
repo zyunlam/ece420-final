@@ -80,18 +80,24 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         int[] pixels = new int[pixelCount];
         faceBmp.getPixels(pixels, 0, 128, 0, 0, 128, 128);
 
-        double[] doubleFace = new double[pixelCount];
+        byte[] doubleFace = new byte[pixelCount];
         for (int i = 0; i < pixelCount; i++) {
             // Convert to grayscale: (R + G + B) / 3 or just use Red channel if already gray
             int p = pixels[i];
             int r = (p >> 16) & 0xff;
             int g = (p >> 8) & 0xff;
             int b = p & 0xff;
-            doubleFace[i] = (r + g + b) / 3.0;
+            doubleFace[i] = (byte) ((r + g + b) / 3.0);
         }
 
-        // Now run your existing classification
-        ClassifierResult result = classifier.ClassifyFace(doubleFace, 3000);
+        // Now let's histogram equalize
+        byte[] histeqresult = new byte[pixelCount];
+        histEq(doubleFace, histeqresult, 128, 128);
+        double[] classificationInput = new double[pixelCount];
+        for (int i = 0; i < pixelCount; i++) {
+            classificationInput[i] = (double) histeqresult[i];
+        }
+        ClassifierResult result = classifier.ClassifyFace(classificationInput, 3000);
         String id_result = identification.get(result.getIndex());
         Log.i("CameraActivity", "Identified " + id_result);
         // Update UI with the result
