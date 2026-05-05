@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_camera"
     android:layout_width="match_parent"
@@ -8,8 +7,7 @@
     android:background="#000000"
     tools:context="com.ece420.lab6.CameraActivity">
 
-    <!-- Camera preview fills the whole screen -->
-
+    <!-- Camera preview + face-detection overlay stacked in a FrameLayout -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -26,9 +24,8 @@
             android:scaleType="fitXY" />
 
     </FrameLayout>
-    <!-- ── HUD corner brackets ───────────────────────────────────────── -->
 
-    <!-- Top-left horizontal bar -->
+    <!-- ── HUD corner brackets ───────────────────────────────────────── -->
     <View
         android:layout_width="48dp"
         android:layout_height="3dp"
@@ -37,8 +34,6 @@
         android:layout_marginTop="88dp"
         android:layout_marginLeft="32dp"
         android:background="#00E5FF" />
-
-    <!-- Top-left vertical bar -->
     <View
         android:layout_width="3dp"
         android:layout_height="48dp"
@@ -47,8 +42,6 @@
         android:layout_marginTop="88dp"
         android:layout_marginLeft="32dp"
         android:background="#00E5FF" />
-
-    <!-- Top-right horizontal bar -->
     <View
         android:layout_width="48dp"
         android:layout_height="3dp"
@@ -57,8 +50,6 @@
         android:layout_marginTop="88dp"
         android:layout_marginRight="32dp"
         android:background="#00E5FF" />
-
-    <!-- Top-right vertical bar -->
     <View
         android:layout_width="3dp"
         android:layout_height="48dp"
@@ -83,7 +74,6 @@
         android:textColor="#00E5FF"
         android:textSize="13sp" />
 
-    <!-- Cyan accent line under header -->
     <View
         android:id="@+id/view"
         android:layout_width="match_parent"
@@ -91,7 +81,7 @@
         android:layout_below="@+id/Helper"
         android:background="#00E5FF" />
 
-    <!-- Debug ImageView — hidden, ID preserved for Java code -->
+    <!-- Debug ImageView — hidden, ID preserved -->
     <ImageView
         android:id="@+id/debug_image_view"
         android:layout_width="128dp"
@@ -102,7 +92,6 @@
         android:visibility="gone" />
 
     <!-- ── Bottom action bar ─────────────────────────────────────────── -->
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -110,15 +99,13 @@
         android:background="#E60A0E14"
         android:orientation="vertical">
 
-        <!-- Top accent stripe -->
-
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
             android:background="#00E5FF" />
 
-        <!-- Mode label -->
         <TextView
+            android:id="@+id/text_mode_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed"
@@ -130,7 +117,6 @@
             android:textColor="#6B7F94"
             android:textSize="10sp" />
 
-        <!-- Three-button row — all buttons are direct children, no wrappers -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -166,6 +152,7 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
+
             <Button
                 android:id="@+id/button_retake"
                 android:layout_width="0dp"
@@ -185,6 +172,240 @@
             <!-- Confirm: solid green, direct Button child -->
 
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PIN ENTRY OVERLAY
+         Shown when MODE_ENROLLMENT starts. Hidden after correct PIN.
+    ════════════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/panel_pin"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F00A0E14"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="&#128274;"
+            android:textSize="48sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.2"
+            android:text="ADMIN VERIFICATION"
+            android:textColor="#00E5FF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.1"
+            android:text="Enter PIN to authorize enrollment"
+            android:textColor="#6B7F94"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/text_pin_dots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.5"
+            android:text="_ _ _ _ _"
+            android:textColor="#00E5FF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/text_pin_error"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-light"
+            android:text="Incorrect PIN. Try again."
+            android:textColor="#E74C3C"
+            android:textSize="12sp"
+            android:visibility="invisible" />
+
+        <GridLayout
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:columnCount="3"
+            android:rowCount="4">
+
+            <Button android:id="@+id/pin_btn_1" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="1" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_2" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="2" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_3" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="3" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+
+            <Button android:id="@+id/pin_btn_4" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="4" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_5" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="5" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_6" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="6" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+
+            <Button android:id="@+id/pin_btn_7" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="7" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_8" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="8" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_9" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="9" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+
+            <Button android:id="@+id/pin_btn_del" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="&#9003;" android:textSize="18sp" android:textColor="#E74C3C"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_0" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                android:background="#1A2530" android:layout_margin="4dp" android:stateListAnimator="@null"/>
+            <Button android:id="@+id/pin_btn_ok" android:layout_width="72dp" android:layout_height="64dp"
+                android:text="OK" android:textSize="14sp" android:textColor="#0A0E14"
+                android:textStyle="bold" android:background="#00E5FF"
+                android:layout_margin="4dp" android:stateListAnimator="@null"/>
+
+        </GridLayout>
+
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ENROLLMENT PROGRESS OVERLAY
+         Shown after PIN verified. Name entry + shot counter + progress bar.
+    ════════════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/panel_enrollment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#D90A0E14"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.2"
+            android:text="NEW MEMBER ENROLLMENT"
+            android:textColor="#00E5FF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
+            android:background="#00E5FF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.15"
+            android:text="MEMBER NAME"
+            android:textColor="#6B7F94"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/enroll_name_input"
+            android:layout_width="280dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:background="#1A2530"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:hint="Enter name..."
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#3A4A5A"
+            android:textSize="16sp"
+            android:padding="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.15"
+            android:text="IMAGES CAPTURED"
+            android:textColor="#6B7F94"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/text_enroll_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif-condensed"
+            android:text="0 / 15"
+            android:textColor="#00E5FF"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="280dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="12dp"
+            android:background="#1A2530">
+
+            <View
+                android:id="@+id/enroll_progress_bar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="#00E5FF" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/button_enroll_capture"
+            android:layout_width="280dp"
+            android:layout_height="58dp"
+            android:layout_marginTop="28dp"
+            android:background="#00E5FF"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.15"
+            android:text="TAKE PHOTO  (0 / 15)"
+            android:textColor="#0A0E14"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:stateListAnimator="@null" />
+
+        <Button
+            android:id="@+id/button_enroll_cancel"
+            android:layout_width="280dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="#1A2530"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.1"
+            android:text="CANCEL"
+            android:textColor="#E74C3C"
+            android:textSize="13sp"
+            android:stateListAnimator="@null" />
+
     </LinearLayout>
 
 </RelativeLayout>
