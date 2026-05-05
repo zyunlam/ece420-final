@@ -120,21 +120,35 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             classificationInput[i] = (double) (processed[i] & 0xFF); // FIX #2: & 0xFF
         }
 
-        ClassifierResult result    = classifier.ClassifyFace(classificationInput, 3000);
+        ClassifierResult result    = classifier.ClassifyFace(classificationInput, 100);
         String           id_result = identification.get(result.getIndex());
         Log.i("CameraActivity", "Identified " + id_result + " dist=" + result.getDistance());
 
         runOnUiThread(() -> {
             StringBuilder sb = new StringBuilder("Top Matches:\n");
             List<ClassifierResult> top = result.getTopMatches();
+            List<ClassifierResult> filtered = new ArrayList<>();
+            boolean added = false;
             if (top != null) {
-                for (int i = 0; i < top.size(); i++) {
-                    String name = identification.get(top.get(i).getIndex());
-                    sb.append((i + 1)).append(". ").append(name)
-                            .append(" (Dist: ").append((int) top.get(i).getDistance()).append(")\n");
+                for (ClassifierResult r : top) {
+                    if (r.getDistance() <= 100 & !added) {
+                        filtered.add(r);
+                        added = true;
+                    }
                 }
             }
-            textHelper.setText(sb.toString());
+
+            if (filtered.isEmpty()) {
+                textHelper.setText("Unknown");
+            } else {
+                StringBuilder bs = new StringBuilder("Top Matches:\n");
+                for (int i = 0; i < filtered.size(); i++) {
+                    String name = identification.get(filtered.get(i).getIndex());
+                    bs.append((i + 1)).append(". ").append(name)
+                            .append(" (Dist: ").append((int) filtered.get(i).getDistance()).append(")\n");
+                }
+                textHelper.setText(bs.toString());
+            }
         });
     }
 
