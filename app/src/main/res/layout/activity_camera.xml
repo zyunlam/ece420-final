@@ -142,20 +142,6 @@
             android:weightSum="3">
 
             <!-- Capture: solid cyan fill, direct child so setVisibility works -->
-            <Button
-                android:id="@+id/button_take_image"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                android:background="#00E5FF"
-                android:fontFamily="sans-serif-condensed"
-                android:letterSpacing="0.1"
-                android:text="CAPTURE"
-                android:textColor="#0A0E14"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:stateListAnimator="@null" />
 
             <!--
                 Retake: direct Button child — no wrapper FrameLayout.
@@ -164,6 +150,22 @@
                 Border effect achieved via a solid grey background with
                 inset padding on the button text instead.
             -->
+
+            <Button
+                android:id="@+id/button_take_image"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#00E5FF"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:stateListAnimator="@null"
+                android:text="CAPTURE"
+                android:textColor="#0A0E14"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <Button
                 android:id="@+id/button_retake"
                 android:layout_width="0dp"
@@ -181,21 +183,6 @@
                 android:stateListAnimator="@null" />
 
             <!-- Confirm: solid green, direct Button child -->
-            <Button
-                android:id="@+id/button_classify"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:background="#2ECC71"
-                android:fontFamily="sans-serif-condensed"
-                android:letterSpacing="0.1"
-                android:text="CONFIRM"
-                android:textColor="#0A0E14"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                android:stateListAnimator="@null" />
 
         </LinearLayout>
     </LinearLayout>

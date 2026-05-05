@@ -57,4 +57,4 @@ def batch_process_faces(input_folder, output_folder):
 # --- EXECUTION ---
 # Make sure these folders exist or match your setup
 
-batch_process_faces("app/src/main/assets/faces/Zyun_Lam", "app/src/main/assets/faces/Zyun_Lam2")
+batch_process_faces("app/src/main/assets/faces_old/Tyler_Marrazzo", "app/src/main/assets/faces/Tyler_Marrazzo")

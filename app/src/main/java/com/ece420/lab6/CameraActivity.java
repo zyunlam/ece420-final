@@ -49,7 +49,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Action Buttons
     private Button btnTakeImage;
     private Button btnRetake;
-    private Button btnClassify;
 
     // Camera Variables
     private Camera camera;
@@ -161,7 +160,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         btnTakeImage = (Button) findViewById(R.id.button_take_image);
         btnRetake = (Button) findViewById(R.id.button_retake);
-        btnClassify = (Button) findViewById(R.id.button_classify);
 
         btnTakeImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -218,7 +216,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 }
                 btnTakeImage.setVisibility(View.GONE);
                 btnRetake.setVisibility(View.VISIBLE);
-                btnClassify.setVisibility(View.VISIBLE);
             }
         });
 
@@ -238,7 +235,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 }
                 btnTakeImage.setVisibility(View.VISIBLE);
                 btnRetake.setVisibility(View.GONE);
-                btnClassify.setVisibility(View.GONE);
                 textHelper.setText("Align face and press Take Image");
             }
         });
