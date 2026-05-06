@@ -6,13 +6,11 @@ public class FacePreprocessor {
     // Target size for Fisherface classification
     private static final int TARGET_SIZE = 96;
 
-    /**
-     * Used for both training images (loaded from assets) and test images
-     * (cropped by MediaPipe). Both are pre-cropped face bitmaps, so we
-     * just resize to TARGET_SIZE, convert to grayscale, and histogram equalize.
-     */
+    // Used for training and test images
+    // Both are pre-cropped face bitmaps from MediaPipe
+    // just resize, convert to grayscale, and do hist eq
     public byte[] processBitmapForTraining(Bitmap inputBmp) {
-        // Resize directly to TARGET_SIZE x TARGET_SIZE
+        // Resize to TARGET_SIZE x TARGET_SIZE
         Bitmap resized = Bitmap.createScaledBitmap(inputBmp, TARGET_SIZE, TARGET_SIZE, true);
 
         int[] pixels = new int[TARGET_SIZE * TARGET_SIZE];
@@ -27,7 +25,7 @@ public class FacePreprocessor {
             grayData[i] = (byte) (0.299 * r + 0.587 * g + 0.114 * b);
         }
 
-        // Histogram equalize and return
+        // Run hist eq
         byte[] equalizedFace = new byte[TARGET_SIZE * TARGET_SIZE];
         histEq(grayData, equalizedFace, TARGET_SIZE, TARGET_SIZE);
         return equalizedFace;
@@ -58,14 +56,4 @@ public class FacePreprocessor {
             }
         }
     }
-
-    // For debugging -- not used
-//    public android.graphics.Bitmap getBitmapFromGrayscale(byte[] data, int width, int height) {
-//        int[] pixels = new int[width * height];
-//        for (int i = 0; i < width * height; i++) {
-//            int y = data[i] & 0xFF;
-//            pixels[i] = 0xFF000000 | (y << 16) | (y << 8) | y;
-//        }
-//        return android.graphics.Bitmap.createBitmap(pixels, width, height, android.graphics.Bitmap.Config.ARGB_8888);
-//    }
 }

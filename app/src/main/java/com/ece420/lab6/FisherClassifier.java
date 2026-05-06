@@ -177,13 +177,6 @@ public class FisherClassifier {
         return classAverages;
     }
 
-    /**
-     * FIX #3: Reduced PCA components from 80 to 40.
-     * With ~30 training images, requesting 80 PCA components retains noisy
-     * eigenvectors and destabilizes the Fisher subspace. 40 components keeps
-     * the most meaningful variance while staying well within the N-1 rank
-     * limit of the training scatter matrix.
-     */
     public void ComputeTrainingWeights(double[][] imageList, int[] labels, int width, int height) {
         Log.d("FisherClassifier", "Images: " + imageList.length);
         int numImages = imageList.length;
@@ -210,17 +203,12 @@ public class FisherClassifier {
             }
         }
 
-        // FIX #3: Reduced from 80 to 40 PCA components for better generalisation
-        // with small training sets (~30 images). Too many components includes
-        // noise eigenvectors that corrupt the Fisher subspace.
         this.fisherfaces = GetFisherFaces(A, labels, 40);
         this.training_weights = A.transpose().times(fisherfaces);
-
-// NEW: store individual training samples
         this.trainingWeightArray = training_weights.getArray();
         this.trainingLabels = labels;
 
-// You can KEEP this if you still want centroid-based fallback/debugging
+        // not used in current implementation, but in original proposal
         this.classWeights = computeClassAverages(this.training_weights, labels);
     }
 
@@ -239,7 +227,7 @@ public class FisherClassifier {
         Matrix omegaNew = phiNew.times(fisherfaces);
         double[] omegaNewArr = omegaNew.getRowPackedCopy();
 
-        // Build a sorted list of all class distances
+        // Build sorted list of all class distances
         List<ClassifierResult> allResults = new ArrayList<>();
         Map<Integer, Integer> voteCount = new HashMap<>();
         for (int i = 0; i < trainingWeightArray.length; i++) {
@@ -264,17 +252,17 @@ public class FisherClassifier {
         List<ClassifierResult> topK = new ArrayList<>(
                 allResults.subList(0, Math.min(10, allResults.size()))
         );
-// Majority voting
+        
+        // Majority voting
         Map<Integer, Integer> votes = new HashMap<>();
         for (ClassifierResult r : topK) {
             int label = r.getIndex();
             votes.put(label, votes.getOrDefault(label, 0) + 1);
         }
 
-// Find winner
+        // Find winner
         int bestLabel = -1;
         int maxVotes = -1;
-
         for (Map.Entry<Integer, Integer> entry : votes.entrySet()) {
             if (entry.getValue() > maxVotes) {
                 maxVotes = entry.getValue();

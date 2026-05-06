@@ -7,7 +7,7 @@
     android:background="#000000"
     tools:context="com.ece420.lab6.CameraActivity">
 
-    <!-- Camera preview + face-detection overlay stacked in a FrameLayout -->
+    <!-- Camera preview + face detection overlay -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -25,7 +25,7 @@
 
     </FrameLayout>
 
-    <!-- ── HUD corner brackets ───────────────────────────────────────── -->
+    <!-- HUD components -->
     <View
         android:layout_width="48dp"
         android:layout_height="3dp"
@@ -59,7 +59,7 @@
         android:layout_marginRight="32dp"
         android:background="#00E5FF" />
 
-    <!-- ── Top instruction bar ───────────────────────────────────────── -->
+    <!-- Top instruction bar -->
     <TextView
         android:id="@+id/Helper"
         android:layout_width="match_parent"
@@ -81,7 +81,7 @@
         android:layout_below="@+id/Helper"
         android:background="#00E5FF" />
 
-    <!-- Debug ImageView — hidden, ID preserved -->
+    <!-- Debug ImageView, not used -->
     <ImageView
         android:id="@+id/debug_image_view"
         android:layout_width="128dp"
@@ -91,7 +91,7 @@
         android:padding="2dp"
         android:visibility="gone" />
 
-    <!-- ── Bottom action bar ─────────────────────────────────────────── -->
+    <!-- Bottom action bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -127,16 +127,7 @@
             android:paddingTop="8dp"
             android:weightSum="3">
 
-            <!-- Capture: solid cyan fill, direct child so setVisibility works -->
-
-            <!--
-                Retake: direct Button child — no wrapper FrameLayout.
-                Visibility is toggled by CameraActivity.java directly on
-                this button ID, so it must not be buried inside a container.
-                Border effect achieved via a solid grey background with
-                inset padding on the button text instead.
-            -->
-
+            <!-- Capture and retake buttons -->
             <Button
                 android:id="@+id/button_take_image"
                 android:layout_width="0dp"
@@ -151,7 +142,6 @@
                 android:textColor="#0A0E14"
                 android:textSize="12sp"
                 android:textStyle="bold" />
-
 
             <Button
                 android:id="@+id/button_retake"
@@ -168,16 +158,10 @@
                 android:textSize="12sp"
                 android:visibility="gone"
                 android:stateListAnimator="@null" />
-
-            <!-- Confirm: solid green, direct Button child -->
-
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         PIN ENTRY OVERLAY
-         Shown when MODE_ENROLLMENT starts. Hidden after correct PIN.
-    ════════════════════════════════════════════════════════════════════ -->
+    <!-- Pin entry overlay -->
     <LinearLayout
         android:id="@+id/panel_pin"
         android:layout_width="match_parent"
@@ -289,10 +273,7 @@
 
     </LinearLayout>
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         ENROLLMENT PROGRESS OVERLAY
-         Shown after PIN verified. Name entry + shot counter + progress bar.
-    ════════════════════════════════════════════════════════════════════ -->
+    <!-- Enrollment progress overlay -->
     <LinearLayout
         android:id="@+id/panel_enrollment"
         android:layout_width="match_parent"

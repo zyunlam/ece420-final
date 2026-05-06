@@ -23,13 +23,7 @@
         android:gravity="center"
         android:orientation="vertical">
 
-        <!--
-            Camera-lens icon: three concentric circles.
-            Outer cyan ring (104dp) > dark cutout (80dp) > cyan dot (30dp).
-            Built entirely from rounded FrameLayout/View trick:
-            each circle is a View whose background is a solid color;
-            size difference creates the "ring" illusion.
-        -->
+        <!-- Camera lens icon -->
         <FrameLayout
             android:layout_width="104dp"
             android:layout_height="104dp"
@@ -41,7 +35,7 @@
                 android:layout_height="104dp"
                 android:background="#00E5FF" />
 
-            <!-- Dark mask — punches hole to make ring -->
+            <!-- Dark mask -->
             <View
                 android:layout_width="80dp"
                 android:layout_height="80dp"
@@ -57,7 +51,7 @@
 
         </FrameLayout>
 
-        <!-- App title -->
+        <!-- Title -->
         <TextView
             android:id="@+id/MainTitle"
             android:layout_width="wrap_content"
@@ -110,11 +104,7 @@
             android:textColor="#6B7F94"
             android:textSize="11sp" />
 
-        <!--
-            Enroll: outline ghost button effect achieved by wrapping
-            the Button in a cyan-background FrameLayout (acts as border)
-            with 2dp padding, and setting the Button background to #0A0E14.
-        -->
+        <!-- Enroll button -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="58dp"
@@ -135,7 +125,7 @@
 
         </FrameLayout>
 
-        <!-- Run Doorbell: solid cyan fill -->
+        <!-- Run doorbell button -->
         <Button
             android:id="@+id/button_recognition_mode"
             android:layout_width="match_parent"
